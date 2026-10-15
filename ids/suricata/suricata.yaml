@@ -1,0 +1,44 @@
+%YAML 1.1
+---
+# Minimal Suricata config for Argos lab.
+# HOME_NET / interface: enp4s0 (192.168.0.0/24 en este host).
+
+vars:
+  address-groups:
+    HOME_NET: "[192.168.0.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+
+af-packet:
+  - interface: enp4s0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert
+        - stats
+        - dns
+        - tls
+        - http
+
+default-rule-path: /var/lib/suricata/rules
+rule-files:
+  - suricata.rules
+  - /srv/http/argos-netsec/ids/suricata/rules/argos.rules
+
+app-layer:
+  protocols:
+    dns:
+      enabled: yes
+    http:
+      enabled: yes
+    tls:
+      enabled: yes
+
+logging:
+  default-log-level: notice

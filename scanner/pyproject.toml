@@ -1,0 +1,27 @@
+[project]
+name = "argos-scanner"
+version = "0.1.0"
+description = "Argos NetSec network discovery and deep scan sensor"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "apscheduler>=3.10",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+argos-scanner = "argos_scanner.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

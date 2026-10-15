@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argos-netsec.local/schemas/service.schema.json",
+  "title": "Service",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["deviceMac", "port", "protocol", "lastSeen"],
+  "properties": {
+    "id": { "type": ["integer", "null"] },
+    "deviceId": { "type": ["integer", "null"] },
+    "deviceMac": {
+      "type": "string",
+      "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+    },
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "protocol": { "type": "string", "enum": ["tcp", "udp"] },
+    "name": { "type": ["string", "null"] },
+    "version": { "type": ["string", "null"] },
+    "cveIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["unknown", "low", "medium", "high", "critical"]
+    },
+    "lastSeen": { "type": "string", "format": "date-time" }
+  }
+}

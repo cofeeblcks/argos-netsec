@@ -1,0 +1,94 @@
+{
+  "devices": [
+    {
+      "id": 1,
+      "mac": "AA:BB:CC:DD:EE:01",
+      "ip": "192.168.1.10",
+      "hostname": "argos-lab-pc",
+      "vendor": "Demo Vendor",
+      "osGuess": "Linux",
+      "authorized": true,
+      "firstSeen": "2026-10-01T12:00:00Z",
+      "lastSeen": "2026-10-15T18:00:00Z",
+      "risk": "low"
+    },
+    {
+      "id": 2,
+      "mac": "AA:BB:CC:DD:EE:02",
+      "ip": "192.168.1.42",
+      "hostname": "unknown-phone",
+      "vendor": "Demo Mobile",
+      "osGuess": null,
+      "authorized": false,
+      "firstSeen": "2026-10-15T17:55:00Z",
+      "lastSeen": "2026-10-15T18:00:00Z",
+      "risk": "high"
+    }
+  ],
+  "services": [
+    {
+      "id": 1,
+      "deviceId": 1,
+      "deviceMac": "AA:BB:CC:DD:EE:01",
+      "port": 22,
+      "protocol": "tcp",
+      "name": "ssh",
+      "version": "OpenSSH 9.x",
+      "cveIds": [],
+      "severity": "low",
+      "lastSeen": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": 2,
+      "deviceId": 1,
+      "deviceMac": "AA:BB:CC:DD:EE:01",
+      "port": 443,
+      "protocol": "tcp",
+      "name": "https",
+      "version": null,
+      "cveIds": ["CVE-2024-0000"],
+      "severity": "medium",
+      "lastSeen": "2026-10-15T12:00:00Z"
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "occurredAt": "2026-10-15T17:55:00Z",
+      "type": "device_unauthorized",
+      "deviceId": 2,
+      "deviceMac": "AA:BB:CC:DD:EE:02",
+      "detail": { "message": "New unauthorized MAC on LAN" }
+    }
+  ],
+  "alerts": [
+    {
+      "id": 1,
+      "occurredAt": "2026-10-15T17:58:00Z",
+      "rule": "argos.arp_spoof",
+      "severity": "high",
+      "srcIp": "192.168.1.42",
+      "dstIp": "192.168.1.1",
+      "deviceId": 2,
+      "raw": { "note": "demo alert" },
+      "status": "open"
+    },
+    {
+      "id": 2,
+      "occurredAt": "2026-10-15T16:00:00Z",
+      "rule": "suricata.ssh_bruteforce",
+      "severity": "critical",
+      "srcIp": "203.0.113.10",
+      "dstIp": "192.168.1.10",
+      "deviceId": 1,
+      "raw": { "count": 40 },
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "devicesTotal": 2,
+    "devicesUnauthorized": 1,
+    "alertsOpen": 2,
+    "riskAverage": "medium"
+  }
+}

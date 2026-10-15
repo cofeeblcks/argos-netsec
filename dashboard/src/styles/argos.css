@@ -1,0 +1,10 @@
+/* Argos brand accents on Untitled UI tokens (Dashboard 04 / header nav) */
+:root,
+.dark-mode {
+    --argos-signal: #ed1c24;
+}
+
+/* Soft brand tint for primary CTAs when needed */
+.argos-signal {
+    color: var(--argos-signal);
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argos-netsec.local/schemas/alert.schema.json",
+  "title": "Alert",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["occurredAt", "rule", "severity", "status"],
+  "properties": {
+    "id": { "type": ["integer", "null"] },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "rule": { "type": "string", "minLength": 1 },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "srcIp": { "type": ["string", "null"], "format": "ipv4" },
+    "dstIp": { "type": ["string", "null"], "format": "ipv4" },
+    "deviceId": { "type": ["integer", "null"] },
+    "raw": { "type": "object" },
+    "status": {
+      "type": "string",
+      "enum": ["open", "acked", "false_positive"]
+    }
+  }
+}

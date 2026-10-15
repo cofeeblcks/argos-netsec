@@ -1,0 +1,10 @@
+<?php
+
+use Illuminate\Support\Facades\Broadcast;
+
+Broadcast::channel('argos.alerts', fn ($user) => $user !== null);
+Broadcast::channel('argos.events', fn ($user) => $user !== null);
+
+Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});

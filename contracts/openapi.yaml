@@ -1,0 +1,168 @@
+openapi: 3.1.0
+info:
+  title: Argos NetSec API
+  version: 1.0.0
+  description: Ingest and query API for Argos NetSec (lab / home network).
+servers:
+  - url: http://127.0.0.1:8000/api/v1
+paths:
+  /ingest/scan:
+    post:
+      summary: Ingest scan devices and services
+      security:
+        - SensorToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [devices, services]
+              properties:
+                devices:
+                  type: array
+                  items:
+                    $ref: './schemas/device.schema.json'
+                services:
+                  type: array
+                  items:
+                    $ref: './schemas/service.schema.json'
+      responses:
+        '202':
+          description: Accepted
+  /ingest/events:
+    post:
+      summary: Ingest change events
+      security:
+        - SensorToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  items:
+                    $ref: './schemas/event.schema.json'
+      responses:
+        '202':
+          description: Accepted
+  /ingest/alerts:
+    post:
+      summary: Ingest IDS alerts
+      security:
+        - SensorToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [alerts]
+              properties:
+                alerts:
+                  type: array
+                  items:
+                    $ref: './schemas/alert.schema.json'
+      responses:
+        '202':
+          description: Accepted
+  /devices:
+    get:
+      summary: List devices
+      security:
+        - Sanctum: []
+      responses:
+        '200':
+          description: OK
+  /devices/{id}:
+    patch:
+      summary: Update device (authorize)
+      security:
+        - Sanctum: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /services:
+    get:
+      summary: List services
+      security:
+        - Sanctum: []
+      responses:
+        '200':
+          description: OK
+  /events:
+    get:
+      summary: List events
+      security:
+        - Sanctum: []
+      responses:
+        '200':
+          description: OK
+  /alerts:
+    get:
+      summary: List alerts
+      security:
+        - Sanctum: []
+      responses:
+        '200':
+          description: OK
+  /alerts/{id}:
+    patch:
+      summary: Update alert status
+      security:
+        - Sanctum: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [acked, false_positive]
+      responses:
+        '200':
+          description: OK
+  /summary:
+    get:
+      summary: Dashboard summary
+      security:
+        - Sanctum: []
+      responses:
+        '200':
+          description: OK
+  /export/demo:
+    get:
+      summary: Export anonymized demo fixture
+      security:
+        - Sanctum: []
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    SensorToken:
+      type: http
+      scheme: bearer
+      description: Sensor token (Authorization Bearer)
+    Sanctum:
+      type: http
+      scheme: bearer

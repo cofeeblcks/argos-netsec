@@ -1,0 +1,12 @@
+[Unit]
+Description=Argos NetSec queue worker
+After=network.target argos-api.service
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/http/argos-netsec/api
+ExecStart=/usr/bin/php artisan queue:work --sleep=1 --tries=3
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

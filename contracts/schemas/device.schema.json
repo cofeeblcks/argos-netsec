@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argos-netsec.local/schemas/device.schema.json",
+  "title": "Device",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mac", "ip", "authorized", "firstSeen", "lastSeen"],
+  "properties": {
+    "id": { "type": ["integer", "null"] },
+    "mac": {
+      "type": "string",
+      "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+    },
+    "ip": { "type": "string", "format": "ipv4" },
+    "hostname": { "type": ["string", "null"] },
+    "vendor": { "type": ["string", "null"] },
+    "osGuess": { "type": ["string", "null"] },
+    "authorized": { "type": "boolean" },
+    "firstSeen": { "type": "string", "format": "date-time" },
+    "lastSeen": { "type": "string", "format": "date-time" },
+    "risk": {
+      "type": "string",
+      "enum": ["unknown", "low", "medium", "high", "critical"]
+    }
+  }
+}

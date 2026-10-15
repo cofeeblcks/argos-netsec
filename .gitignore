@@ -1,0 +1,53 @@
+# Env and secrets
+.env
+.env.*
+!.env.example
+api/.env
+dashboard/.env
+scanner/.env
+ids/.env
+
+# PHP / Laravel
+api/vendor/
+api/node_modules/
+api/public/hot
+api/public/storage
+api/storage/*.key
+api/storage/pail
+api/storage/logs/*
+!api/storage/logs/.gitignore
+api/bootstrap/cache/*.php
+!api/bootstrap/cache/.gitignore
+api/database/*.sqlite
+
+# Node
+dashboard/node_modules/
+dashboard/dist/
+api/node_modules/
+
+# Python
+scanner/.venv/
+ids/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/*.egg-info/
+
+# Captures, dumps, local data
+*.pcap
+*.pcapng
+*.sql
+*.dump
+*.log
+
+# Tooling / deploy local
+.netlify
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Generated contract consumers (regenerate with make contracts)
+scanner/src/argos_scanner/models_generated/
+ids/src/argos_ids/models_generated/
+dashboard/src/types/contracts.generated.ts

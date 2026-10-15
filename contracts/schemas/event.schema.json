@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argos-netsec.local/schemas/event.schema.json",
+  "title": "Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["occurredAt", "type", "detail"],
+  "properties": {
+    "id": { "type": ["integer", "null"] },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "device_new",
+        "device_gone",
+        "device_unauthorized",
+        "ip_duplicate",
+        "port_new",
+        "sensor_heartbeat",
+        "other"
+      ]
+    },
+    "deviceId": { "type": ["integer", "null"] },
+    "deviceMac": {
+      "type": ["string", "null"],
+      "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+    },
+    "detail": { "type": "object" }
+  }
+}
