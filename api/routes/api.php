@@ -19,12 +19,12 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login']);
 
     Route::middleware('sensor')->prefix('ingest')->group(function () {
+        Route::get('heartbeat', [BaselineController::class, 'heartbeat']);
         Route::post('scan', [ScanController::class, 'store']);
         Route::post('events', [IngestEventController::class, 'store']);
         Route::post('alerts', [IngestAlertController::class, 'store']);
         Route::get('devices', [BaselineController::class, 'devices']);
     });
-
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);

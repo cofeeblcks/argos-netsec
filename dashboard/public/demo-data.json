@@ -87,8 +87,24 @@
   ],
   "summary": {
     "devicesTotal": 2,
+    "devicesAuthorized": 1,
     "devicesUnauthorized": 1,
+    "devicesWithOs": 1,
+    "devicesSeen24h": 2,
+    "openPorts": 2,
+    "servicesHighSeverity": 0,
+    "cveUnique": 1,
     "alertsOpen": 2,
-    "riskAverage": "medium"
+    "alertsHighCritical": 2,
+    "alertsBySeverity": { "low": 0, "medium": 0, "high": 1, "critical": 1 },
+    "events24h": 1,
+    "riskAverage": "medium",
+    "riskBreakdown": { "unknown": 0, "low": 1, "medium": 0, "high": 1, "critical": 0 },
+    "sensorsOnline": 0,
+    "sensorsTotal": 0,
+    "topPorts": [
+      { "port": 22, "protocol": "tcp", "count": 1, "name": "ssh" },
+      { "port": 443, "protocol": "tcp", "count": 1, "name": "https" }
+    ]
   }
 }

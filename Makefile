@@ -23,6 +23,7 @@ setup:
 	cd dashboard && pnpm install
 	cd scanner && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 	cd ids && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+	@echo "Nota IDS: arp_spoof con scapy suele requerir: sudo .venv/bin/python -m argos_ids.main"
 	@echo "Setup done. Fill env files — see deploy/env.md"
 
 contracts:
@@ -49,9 +50,10 @@ scan:
 
 ids:
 	@IFACE=$$(grep '^ARGOS_IFACE=' $(ROOT)ids/.env | cut -d= -f2); \
-	echo "Suricata (ruta absoluta; correr desde cualquier cwd):"; \
+	echo "make ids solo imprime comandos. Arranca AMBOS procesos:"; \
+	echo "1) Suricata:"; \
 	echo "  sudo suricata -c $(ROOT)ids/suricata/suricata.yaml -i $$IFACE"; \
-	echo "Lector IDS:"; \
+	echo "2) Lector (latido API cada 60s + alertas eve.json):"; \
 	echo "  cd $(ROOT)ids && .venv/bin/python -m argos_ids.main"
 
 test:

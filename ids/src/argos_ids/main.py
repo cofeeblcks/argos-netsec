@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 import threading
+import time
 from typing import Any
 
 from argos_ids.client import ApiClient
@@ -10,6 +11,14 @@ from argos_ids.config import load_config
 from argos_ids.detectors.arp_spoof import ArpSpoofDetector
 from argos_ids.eve_reader import follow_eve
 from argos_ids.normalize import eve_alert_to_contract
+
+HEARTBEAT_SECONDS = 60
+
+
+def _heartbeat_loop(client: ApiClient, interval: int = HEARTBEAT_SECONDS) -> None:
+    while True:
+        time.sleep(interval)
+        client.heartbeat()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -47,8 +56,16 @@ def main(argv: list[str] | None = None) -> int:
             if normalized:
                 alerts.append(normalized)
         emit(alerts)
+        client.heartbeat()
         print(f"[argos-ids] sent {len(alerts)} alerts from file")
         return 0
+
+    if not client.heartbeat():
+        print("[argos-ids] warning: initial heartbeat failed (API down or bad token?)", file=sys.stderr)
+    else:
+        print("[argos-ids] heartbeat ok")
+
+    threading.Thread(target=_heartbeat_loop, args=(client,), daemon=True).start()
 
     if cfg.enable_arp_spoof:
         detector = ArpSpoofDetector(on_alert=lambda a: emit([a]))
@@ -67,7 +84,6 @@ def main(argv: list[str] | None = None) -> int:
         if normalized:
             emit([normalized])
     return 0
-
 
 
 if __name__ == "__main__":

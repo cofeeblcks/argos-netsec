@@ -40,11 +40,17 @@ class ArpSpoofDetector:
         try:
             from scapy.all import ARP, sniff  # type: ignore
         except ImportError as exc:
-            raise RuntimeError("Instala scapy: pip install 'argos-ids[scapy]'") from exc
+            raise RuntimeError("Falta scapy en el venv: pip install -e '.[dev]'") from exc
 
         def handle(pkt: Any) -> None:
             if pkt.haslayer(ARP) and pkt[ARP].op in (1, 2):
                 self.observe(pkt[ARP].psrc, pkt[ARP].hwsrc)
 
         print(f"[argos-ids] arp_spoof sniffing on {iface}")
-        sniff(filter="arp", iface=iface, prn=handle, store=False)
+        try:
+            sniff(filter="arp", iface=iface, prn=handle, store=False)
+        except PermissionError as exc:
+            raise RuntimeError(
+                f"Sniff ARP en {iface} necesita privilegios: "
+                "sudo .venv/bin/python -m argos_ids.main"
+            ) from exc

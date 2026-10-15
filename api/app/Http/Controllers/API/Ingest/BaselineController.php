@@ -30,4 +30,16 @@ class BaselineController extends Controller
             MessageHelper::make('dispositivos', 'index')
         );
     }
+
+    /** Touch sensor last_seen via AuthenticateSensor middleware (no payload). */
+    public function heartbeat(): JsonResponse
+    {
+        $sensor = request()->attributes->get('sensor');
+
+        return $this->successResponse([
+            'sensor' => $sensor?->name,
+            'kind' => $sensor?->kind,
+            'lastSeenAt' => $sensor?->last_seen_at?->toIso8601String(),
+        ], 'Latido de sensor registrado');
+    }
 }

@@ -50,11 +50,23 @@ export interface AlertItem {
 
 export interface Summary {
     devicesTotal: number;
+    devicesAuthorized?: number;
     devicesUnauthorized: number;
+    devicesWithOs?: number;
+    devicesSeen24h?: number;
+    openPorts?: number;
+    servicesHighSeverity?: number;
+    cveUnique?: number;
     alertsOpen: number;
+    alertsHighCritical?: number;
     alertsBySeverity?: Record<string, number>;
+    events24h?: number;
     riskAverage: string;
-    sensors?: Array<{ name: string; kind: string; lastSeenAt: string | null }>;
+    riskBreakdown?: Record<string, number>;
+    sensorsOnline?: number;
+    sensorsTotal?: number;
+    sensors?: Array<{ name: string; kind: string; lastSeenAt: string | null; online?: boolean }>;
+    topPorts?: Array<{ port: number; protocol: string; count: number; name: string | null }>;
 }
 
 export interface DemoFixture {

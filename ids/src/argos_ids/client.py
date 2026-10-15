@@ -17,23 +17,42 @@ class ApiClient:
         self.timeout = timeout
         self.queue_dir.mkdir(parents=True, exist_ok=True)
 
-    def post_alerts(self, alerts: list[dict[str, Any]], retries: int = 3) -> bool:
-        url = f"{self.api_url}/api/v1/ingest/alerts"
-        payload = {"alerts": alerts}
-        delay = 1.0
-        last_error: Exception | None = None
-        headers = {
+    def _headers(self) -> dict[str, str]:
+        return {
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
 
+    def heartbeat(self) -> bool:
+        """Ping ingest so AuthenticateSensor updates sensors.last_seen_at."""
+        url = f"{self.api_url}/api/v1/ingest/heartbeat"
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=self._headers())
+            if response.status_code < 300:
+                return True
+            print(f"[argos-ids] heartbeat HTTP {response.status_code}: {response.text[:200]}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[argos-ids] heartbeat error: {exc}")
+        return False
+
+    def post_alerts(self, alerts: list[dict[str, Any]], retries: int = 3) -> bool:
+        url = f"{self.api_url}/api/v1/ingest/alerts"
+        payload = {"alerts": alerts}
+        delay = 1.0
+        last_error: Exception | None = None
+
         for _ in range(retries):
             try:
                 with httpx.Client(timeout=self.timeout) as client:
-                    response = client.post(url, headers=headers, json=payload)
+                    response = client.post(url, headers=self._headers(), json=payload)
                 if response.status_code < 300:
                     return True
+                # Permanent client errors: do not offline-queue forever
+                if 400 <= response.status_code < 500 and response.status_code != 429:
+                    print(f"[argos-ids] reject alerts: HTTP {response.status_code}: {response.text[:300]}")
+                    return False
                 last_error = RuntimeError(f"HTTP {response.status_code}")
             except Exception as exc:  # noqa: BLE001
                 last_error = exc

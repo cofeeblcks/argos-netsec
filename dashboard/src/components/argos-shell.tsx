@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router";
-import { Bell01, LifeBuoy01, LogOut01, Settings01 } from "@untitledui/icons";
+import { Bell01, LogOut01 } from "@untitledui/icons";
 import { useAuth } from "@/auth/AuthProvider";
 import { MobileNavigationHeader } from "@/components/application/app-navigation/base-components/mobile-header";
 import { NavItemBase } from "@/components/application/app-navigation/base-components/nav-item";
@@ -44,12 +44,6 @@ export function ArgosShell() {
                     <div className="mt-auto flex flex-col gap-3 p-4">
                         <NavItemBase type="link" href="/actividad" icon={Bell01}>
                             Alertas
-                        </NavItemBase>
-                        <NavItemBase type="link" href="#" icon={LifeBuoy01}>
-                            Soporte
-                        </NavItemBase>
-                        <NavItemBase type="link" href="#" icon={Settings01}>
-                            Ajustes
                         </NavItemBase>
                         <button
                             type="button"
@@ -106,21 +100,13 @@ export function ArgosShell() {
                                 </BadgeWithDot>
                             )}
                             {user ? <span className="hidden text-sm text-tertiary xl:inline">{user.email}</span> : null}
-                            <ButtonUtility
-                                size="sm"
-                                color="tertiary"
-                                tooltip="Alertas"
-                                icon={Bell01}
-                                onClick={() => navigate("/actividad")}
-                            />
-                            <ButtonUtility size="sm" color="tertiary" tooltip="Ajustes" icon={Settings01} />
                             <ButtonUtility size="sm" color="tertiary" tooltip="Cerrar sesión" icon={LogOut01} onClick={() => void onLogout()} />
                         </div>
                     </div>
                 </section>
             </header>
 
-            <main className="mx-auto w-full max-w-container flex-1 px-4 py-8 md:px-8">
+            <main className="mx-auto w-full flex-1 px-4 py-8 md:px-8">
                 <Outlet />
             </main>
         </div>

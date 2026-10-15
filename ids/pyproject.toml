@@ -6,10 +6,12 @@ requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.27",
     "python-dotenv>=1.0",
+    "scapy>=2.5",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# kept for older docs; scapy is now a core dependency
 scapy = ["scapy>=2.5"]
 
 [project.scripts]

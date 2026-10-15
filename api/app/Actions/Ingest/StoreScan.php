@@ -31,9 +31,10 @@ final class StoreScan
                 }
                 $device->fill([
                     'ip' => $item['ip'],
-                    'hostname' => $item['hostname'] ?? null,
-                    'vendor' => $item['vendor'] ?? null,
-                    'os_guess' => $item['osGuess'] ?? null,
+                    'hostname' => $item['hostname'] ?? $device->hostname,
+                    'vendor' => $item['vendor'] ?? $device->vendor,
+                    // Keep previous OS when the scan omits fingerprint (e.g. nmap -O needs root)
+                    'os_guess' => $item['osGuess'] ?? $device->os_guess,
                     'last_seen' => $now,
                     'risk' => $item['risk'] ?? $device->risk ?? 'unknown',
                 ]);

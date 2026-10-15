@@ -23,7 +23,11 @@ def _is_root() -> bool:
         return False
 
 
-def run_deep_scan(targets: list[str], timing: str = "-T3") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def run_deep_scan(
+    targets: list[str],
+    timing: str = "-T3",
+    mac_by_ip: dict[str, str] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return (device updates, services) from nmap -sV XML.
 
     OS fingerprint (-O) only when running as root; otherwise nmap aborts entirely.
@@ -33,6 +37,7 @@ def run_deep_scan(targets: list[str], timing: str = "-T3") -> tuple[list[dict[st
 
     cmd = [
         "nmap",
+        "-Pn",  # don't skip hosts that ignore ICMP; still scan TCP
         "-sV",
         "--top-ports",
         "100",
@@ -42,11 +47,13 @@ def run_deep_scan(targets: list[str], timing: str = "-T3") -> tuple[list[dict[st
         *targets,
     ]
     if _is_root():
-        cmd[2:2] = ["-O", "--osscan-guess"]
+        cmd[3:3] = ["-O", "--osscan-guess"]
 
+    print(f"[argos-scanner] nmap targets ({len(targets)}): {', '.join(targets)}")
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=900, check=False)
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"[argos-scanner] nmap failed: {exc}")
         return [], []
 
     if not result.stdout.strip():
@@ -55,18 +62,23 @@ def run_deep_scan(targets: list[str], timing: str = "-T3") -> tuple[list[dict[st
             print(f"[argos-scanner] nmap stderr: {err[:400]}")
         return [], []
 
-    return parse_nmap_xml(result.stdout)
+    return parse_nmap_xml(result.stdout, mac_by_ip=mac_by_ip)
 
 
-def parse_nmap_xml(xml_text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def parse_nmap_xml(
+    xml_text: str,
+    mac_by_ip: dict[str, str] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     root = ET.fromstring(xml_text)
     now = _now()
     devices: list[dict[str, Any]] = []
     services: list[dict[str, Any]] = []
+    mac_by_ip = {ip: _normalize_mac(mac) for ip, mac in (mac_by_ip or {}).items()}
 
     for host in root.findall("host"):
         status = host.find("status")
-        if status is not None and status.get("state") != "up":
+        # With -Pn, "down" is rare; still skip explicit down
+        if status is not None and status.get("state") == "down":
             continue
 
         addr_ip = None
@@ -82,8 +94,9 @@ def parse_nmap_xml(xml_text: str) -> tuple[list[dict[str, Any]], list[dict[str, 
         if not addr_ip:
             continue
         if not addr_mac:
-            addr_mac = _mac_from_arp(addr_ip)
+            addr_mac = mac_by_ip.get(addr_ip) or _mac_from_arp(addr_ip)
         if not addr_mac:
+            print(f"[argos-scanner] skip {addr_ip}: sin MAC (nmap/ARP/API)")
             continue
 
         hostname = None
@@ -93,12 +106,56 @@ def parse_nmap_xml(xml_text: str) -> tuple[list[dict[str, Any]], list[dict[str, 
             if hn is not None:
                 hostname = hn.get("name")
 
-        os_guess = None
-        os_el = host.find("os")
-        if os_el is not None:
-            match = os_el.find("osmatch")
-            if match is not None:
-                os_guess = match.get("name")
+        os_guess = _extract_os_guess(host)
+        host_services: list[dict[str, Any]] = []
+
+        ports = host.find("ports")
+        if ports is not None:
+            for port in ports.findall("port"):
+                state = port.find("state")
+                if state is None or state.get("state") != "open":
+                    continue
+                portid = int(port.get("portid", "0"))
+                protocol = port.get("protocol", "tcp")
+                service = port.find("service")
+                name = service.get("name") if service is not None else None
+                product = service.get("product") if service is not None else None
+                version = service.get("version") if service is not None else None
+                extrainfo = service.get("extrainfo") if service is not None else None
+                tunnel = service.get("tunnel") if service is not None else None
+                version_parts = [x for x in [product, version, extrainfo] if x]
+                if tunnel:
+                    version_parts.append(f"tunnel={tunnel}")
+                version_str = " ".join(version_parts) or None
+
+                cve_ids: list[str] = []
+                severity = "low"
+                for script in port.findall("script"):
+                    if script.get("id") == "vulners":
+                        output = script.get("output") or ""
+                        cve_ids.extend(re.findall(r"(CVE-\d{4}-\d+)", output))
+                        if "CRITICAL" in output.upper():
+                            severity = "critical"
+                        elif "HIGH" in output.upper():
+                            severity = "high"
+                        elif "MEDIUM" in output.upper():
+                            severity = "medium"
+
+                host_services.append(
+                    {
+                        "deviceMac": addr_mac,
+                        "port": portid,
+                        "protocol": protocol,
+                        "name": name,
+                        "version": version_str,
+                        "cveIds": sorted(set(cve_ids)),
+                        "severity": severity,
+                        "lastSeen": now,
+                    }
+                )
+
+        if not os_guess:
+            os_guess = _infer_os_from_services(host_services)
 
         devices.append(
             {
@@ -113,47 +170,67 @@ def parse_nmap_xml(xml_text: str) -> tuple[list[dict[str, Any]], list[dict[str, 
                 "risk": "unknown",
             }
         )
-
-        ports = host.find("ports")
-        if ports is None:
-            continue
-        for port in ports.findall("port"):
-            state = port.find("state")
-            if state is None or state.get("state") != "open":
-                continue
-            portid = int(port.get("portid", "0"))
-            protocol = port.get("protocol", "tcp")
-            service = port.find("service")
-            name = service.get("name") if service is not None else None
-            product = service.get("product") if service is not None else None
-            version = service.get("version") if service is not None else None
-            version_str = " ".join(x for x in [product, version] if x) or None
-
-            cve_ids: list[str] = []
-            severity = "low"
-            # Nmap vulners script output often in script elements
-            for script in port.findall("script"):
-                if script.get("id") == "vulners":
-                    output = script.get("output") or ""
-                    cve_ids.extend(re.findall(r"(CVE-\d{4}-\d+)", output))
-                    if "CRITICAL" in output.upper():
-                        severity = "critical"
-                    elif "HIGH" in output.upper():
-                        severity = "high"
-                    elif "MEDIUM" in output.upper():
-                        severity = "medium"
-
-            services.append(
-                {
-                    "deviceMac": addr_mac,
-                    "port": portid,
-                    "protocol": protocol,
-                    "name": name,
-                    "version": version_str,
-                    "cveIds": sorted(set(cve_ids)),
-                    "severity": severity,
-                    "lastSeen": now,
-                }
-            )
+        services.extend(host_services)
 
     return devices, services
+
+
+def _extract_os_guess(host: ET.Element) -> str | None:
+    os_el = host.find("os")
+    if os_el is None:
+        return None
+
+    best_name: str | None = None
+    best_acc = -1
+    for match in os_el.findall("osmatch"):
+        name = match.get("name")
+        if not name:
+            continue
+        try:
+            acc = int(match.get("accuracy") or "0")
+        except ValueError:
+            acc = 0
+        if acc > best_acc:
+            best_acc = acc
+            best_name = f"{name} ({acc}%)" if acc else name
+
+    if best_name:
+        return best_name
+
+    osclass = os_el.find("osclass")
+    if osclass is not None:
+        parts = [
+            osclass.get("vendor"),
+            osclass.get("osfamily"),
+            osclass.get("osgen"),
+            osclass.get("type"),
+        ]
+        joined = " ".join(p for p in parts if p)
+        return joined or None
+
+    return None
+
+
+def _infer_os_from_services(services: list[dict[str, Any]]) -> str | None:
+    """Soft OS hint from banners when nmap -O is unavailable."""
+    blob = " ".join(
+        f"{s.get('name') or ''} {s.get('version') or ''}".lower() for s in services
+    )
+    rules: list[tuple[str, str]] = [
+        ("windows", "Windows (inferido)"),
+        ("microsoft", "Windows (inferido)"),
+        ("openssh", "Unix/Linux (inferido)"),
+        ("linux", "Linux (inferido)"),
+        ("android", "Android (inferido)"),
+        ("apple", "Apple/iOS/macOS (inferido)"),
+        ("iphone", "Apple/iOS (inferido)"),
+        ("chromecast", "Google Cast / Chromecast (inferido)"),
+        ("castv2", "Google Cast (inferido)"),
+        ("dropbear", "Linux/embedded (inferido)"),
+        ("busybox", "Linux/embedded (inferido)"),
+        ("router", "Router/firmware (inferido)"),
+    ]
+    for needle, label in rules:
+        if needle in blob:
+            return label
+    return None
