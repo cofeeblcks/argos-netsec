@@ -33,6 +33,9 @@ cp -n ids/.env.example ids/.env
 #   dashboard/.env    → VITE_API_URL, VITE_REVERB_* (= REVERB_APP_KEY), VITE_DEMO=false
 #   scanner/.env      → ARGOS_API_URL, ARGOS_SENSOR_TOKEN, ARGOS_NETWORK_CIDR
 #   ids/.env          → ARGOS_API_URL, ARGOS_SENSOR_TOKEN, ARGOS_IFACE
+#
+# Telegram (opcional): crear bot con @BotFather y obtener token + chat_id
+# → pasos en deploy/env.md § Telegram
 ```
 
 Asegura `APP_KEY` y claves Reverb alineadas:

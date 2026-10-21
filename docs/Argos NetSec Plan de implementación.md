@@ -362,7 +362,7 @@ new Echo({
 ### Telegram
 
 - Mensaje: regla, severidad, src/dst IP, hostname si hay `device_id`.
-- Secretos solo en `.env` de la API; documentados en `deploy/env.md`.
+- Secretos solo en `.env` de la API; documentados en `deploy/env.md` (incluye cómo crear el bot con @BotFather y obtener `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`).
 - No loguear el bot token.
 - Fallo de envío no bloquea la respuesta de ingest ni el broadcast.
 
