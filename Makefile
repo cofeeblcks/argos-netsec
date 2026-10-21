@@ -52,7 +52,7 @@ ids:
 	@IFACE=$$(grep '^ARGOS_IFACE=' $(ROOT)ids/.env | cut -d= -f2); \
 	echo "make ids solo imprime comandos. Arranca AMBOS procesos:"; \
 	echo "1) Suricata:"; \
-	echo "  sudo suricata -c $(ROOT)ids/suricata/suricata.yaml -i $$IFACE"; \
+	echo "  sudo suricata -c $(ROOT)ids/suricata/suricata.yaml -i $$1"; \
 	echo "2) Lector (latido API cada 60s + alertas eve.json):"; \
 	echo "  cd $(ROOT)ids && .venv/bin/python -m argos_ids.main"
 
