@@ -1,0 +1,46 @@
+%YAML 1.1
+---
+# Suricata config for Argos lab inside Docker (host network).
+# Interface is passed on the CLI: -i ${ARGOS_IFACE}
+
+vars:
+  address-groups:
+    HOME_NET: "[192.168.0.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+
+af-packet:
+  - interface: default
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert
+        - stats
+        - dns
+        - tls
+        - http
+
+default-log-dir: /var/log/suricata
+
+default-rule-path: /var/lib/suricata/rules
+rule-files:
+  - suricata.rules
+  - /etc/suricata/rules/argos.rules
+
+app-layer:
+  protocols:
+    dns:
+      enabled: yes
+    http:
+      enabled: yes
+    tls:
+      enabled: yes
+
+logging:
+  default-log-level: notice

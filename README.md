@@ -1,14 +1,32 @@
 # Argos NetSec
 
-Sistema de seguridad en redes para lab / red doméstica en Linux (nativo, sin Docker).
+Sistema de seguridad en redes para lab / red doméstica en Linux.
 
 Sensores Python → API Laravel → MariaDB / Reverb → dashboard React + alertas Telegram.
 
 Plan de implementación: [docs/Argos NetSec Plan de implementación.md](docs/Argos%20NetSec%20Plan%20de%20implementaci%C3%B3n.md)
 
-Variables de entorno: [deploy/env.md](deploy/env.md)
+Variables de entorno: [deploy/env.md](deploy/env.md) · Docker Compose: [.env.docker.example](.env.docker.example)
 
-## Deploy (lab local)
+## Deploy con Docker
+
+Núcleo (`db`, `api`, `reverb`, `queue`, `dashboard`) siempre; sensores (`scanner`, `suricata`, `ids`) con profile `sensors`.
+
+```bash
+cp -n .env.docker.example .env   # ajusta ARGOS_IFACE / secretos
+make docker-up                   # o: docker compose up -d --build
+# UI http://127.0.0.1:5173 · API :8000 · Reverb :8080
+# Login seed: admin@argos.local / password
+
+make docker-up-sensors           # o: docker compose --profile sensors up -d
+make docker-down                 # para el stack; no borra volúmenes
+```
+
+Ajusta `ARGOS_IFACE` en `.env` a tu NIC LAN. ARP spoof en contenedor queda en `ARGOS_ENABLE_ARP_SPOOF=false` por defecto.
+
+No uses `docker compose down -v` salvo que quieras borrar MariaDB y logs de Suricata.
+
+## Deploy (lab local nativo)
 
 ### 1. Dependencias e instalación
 
@@ -129,8 +147,9 @@ pnpm build
 | Carpeta | Rol |
 | --- | --- |
 | `contracts/` | JSON Schema + OpenAPI |
-| `api/` | Laravel 13 |
-| `dashboard/` | Vite + React |
-| `scanner/` | Descubrimiento / escaneo |
-| `ids/` | Suricata + lector |
+| `api/` | Laravel 13 (+ `Dockerfile`) |
+| `dashboard/` | Vite + React (+ `Dockerfile`) |
+| `scanner/` | Descubrimiento / escaneo (+ `Dockerfile`) |
+| `ids/` | Suricata + lector (+ `Dockerfile`) |
+| `compose.yaml` | Stack Docker (núcleo + profile `sensors`) |
 | `deploy/` | systemd + env |

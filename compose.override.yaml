@@ -1,0 +1,42 @@
+# Auto-loaded by Docker Compose for local development.
+# Bind-mounts source for live edit; rebuild deps when lockfiles change.
+
+services:
+  api:
+    volumes:
+      - ./api/app:/var/www/html/app
+      - ./api/config:/var/www/html/config
+      - ./api/database:/var/www/html/database
+      - ./api/routes:/var/www/html/routes
+      - ./api/resources:/var/www/html/resources
+    develop:
+      watch:
+        - path: ./api/composer.json
+          action: rebuild
+        - path: ./api/composer.lock
+          action: rebuild
+
+  reverb:
+    volumes:
+      - ./api/app:/var/www/html/app
+      - ./api/config:/var/www/html/config
+      - ./api/routes:/var/www/html/routes
+
+  queue:
+    volumes:
+      - ./api/app:/var/www/html/app
+      - ./api/config:/var/www/html/config
+      - ./api/routes:/var/www/html/routes
+
+  dashboard:
+    volumes:
+      - ./dashboard/src:/app/src
+      - ./dashboard/public:/app/public
+      - ./dashboard/index.html:/app/index.html
+      - ./dashboard/vite.config.ts:/app/vite.config.ts
+    develop:
+      watch:
+        - path: ./dashboard/package.json
+          action: rebuild
+        - path: ./dashboard/pnpm-lock.yaml
+          action: rebuild

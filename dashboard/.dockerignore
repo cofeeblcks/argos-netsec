@@ -1,0 +1,25 @@
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*~
+
+# Docs
+*.md
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+**/.npmrc
+
+# Dependencies and build output
+node_modules/
+dist/
+.pnpm-store/
+
+# Docker meta
+Dockerfile*
+.dockerignore

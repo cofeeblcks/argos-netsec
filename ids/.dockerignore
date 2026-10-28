@@ -1,0 +1,36 @@
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*~
+
+# Docs
+*.md
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Python local
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.queue/
+
+# Tests
+tests/
+
+# Suricata host paths (mounted at runtime, not baked)
+# Keep rules needed if image needs them — compose mounts suricata/
+
+# Docker meta
+Dockerfile*
+.dockerignore

@@ -1,18 +1,23 @@
-.PHONY: setup contracts migrate dev scan ids test demo install-services help
+.PHONY: setup contracts migrate dev scan ids test demo install-services \
+	docker-up docker-up-sensors docker-down docker-config help
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
 	@echo "Argos NetSec targets:"
-	@echo "  make setup             Install deps and copy .env.example files"
-	@echo "  make contracts         Verify contracts and note codegen paths"
-	@echo "  make migrate           Run Laravel migrations"
-	@echo "  make dev               API + Reverb + queue + dashboard (manual panes)"
-	@echo "  make scan              Deep scan (requires scanner)"
-	@echo "  make ids               Start Suricata + IDS reader (requires ids)"
-	@echo "  make test              Run api / scanner / ids / dashboard tests"
-	@echo "  make demo              Export demo fixture + build dashboard demo"
-	@echo "  make install-services  Install systemd units from deploy/"
+	@echo "  make setup               Install deps and copy .env.example files"
+	@echo "  make contracts           Verify contracts and note codegen paths"
+	@echo "  make migrate             Run Laravel migrations"
+	@echo "  make dev                 API + Reverb + queue + dashboard (manual panes)"
+	@echo "  make scan                Deep scan (requires scanner)"
+	@echo "  make ids                 Start Suricata + IDS reader (requires ids)"
+	@echo "  make test                Run api / scanner / ids / dashboard tests"
+	@echo "  make demo                Export demo fixture + build dashboard demo"
+	@echo "  make install-services    Install systemd units from deploy/"
+	@echo "  make docker-up           Build/start core Compose stack"
+	@echo "  make docker-up-sensors   Start core + sensors profile"
+	@echo "  make docker-down         Stop Compose stack (keeps volumes)"
+	@echo "  make docker-config       Validate compose.yaml"
 
 setup:
 	@test -f api/.env || cp api/.env.example api/.env
@@ -52,7 +57,7 @@ ids:
 	@IFACE=$$(grep '^ARGOS_IFACE=' $(ROOT)ids/.env | cut -d= -f2); \
 	echo "make ids solo imprime comandos. Arranca AMBOS procesos:"; \
 	echo "1) Suricata:"; \
-	echo "  sudo suricata -c $(ROOT)ids/suricata/suricata.yaml -i $$1"; \
+	echo "  sudo suricata -c $(ROOT)ids/suricata/suricata.yaml -i $$IFACE"; \
 	echo "2) Lector (latido API cada 60s + alertas eve.json):"; \
 	echo "  cd $(ROOT)ids && .venv/bin/python -m argos_ids.main"
 
@@ -69,3 +74,18 @@ demo:
 install-services:
 	@echo "Copy deploy/*.service to systemd and enable (requires root for system units)."
 	@ls deploy/*.service 2>/dev/null || echo "No unit files yet"
+
+docker-config:
+	@test -f .env || cp .env.docker.example .env
+	docker compose config --quiet
+
+docker-up:
+	@test -f .env || cp .env.docker.example .env
+	docker compose up -d --build
+
+docker-up-sensors:
+	@test -f .env || cp .env.docker.example .env
+	docker compose --profile sensors up -d --build
+
+docker-down:
+	docker compose --profile sensors down

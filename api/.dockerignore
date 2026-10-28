@@ -1,0 +1,51 @@
+# VCS / IDE
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.swp
+*~
+
+# Docs / agents
+*.md
+AGENTS.md
+CLAUDE.md
+.agents/
+.claude/
+.grok/
+.pi/
+.mcp.json
+boost.json
+opencode.json
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+**/.npmrc
+*.pem
+*.key
+
+# Dependencies and caches (installed in image)
+/vendor/
+/node_modules/
+npm-debug.log*
+
+# Local runtime / storage
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/bootstrap/cache/*.php
+/database/*.sqlite
+/public/hot
+/public/storage
+
+# Tests (not needed at runtime)
+/tests/
+phpunit.xml
+
+# Docker meta
+Dockerfile*
+.dockerignore

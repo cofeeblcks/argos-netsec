@@ -1,0 +1,203 @@
+# Argos NetSec lab stack
+# Core: docker compose up -d --build
+# Sensors: docker compose --profile sensors up -d
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-argos_netsec}
+      MARIADB_USER: ${MARIADB_USER:-argos}
+      # Lab fallback only — override via root .env in real use
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-argos}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-argos_root}
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      # Host MariaDB often owns 3306; map Compose DB to 3307 for local clients
+      - "127.0.0.1:3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment: &api-env
+      APP_NAME: ArgosNetSec
+      APP_ENV: ${APP_ENV:-local}
+      APP_KEY: ${APP_KEY:-base64:QXJnb3NOZXRTZWNEb2NrZXJMYWJLZXkzMkJ5dGVzISE=}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL: ${APP_URL:-http://127.0.0.1:8000}
+      DB_CONNECTION: mariadb
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${MARIADB_DATABASE:-argos_netsec}
+      DB_USERNAME: ${MARIADB_USER:-argos}
+      DB_PASSWORD: ${MARIADB_PASSWORD:-argos}
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:-argos-local}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-argos-reverb-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-argos-reverb-secret}
+      # Browser / Echo clients use 127.0.0.1; API publishes to the Compose service name
+      REVERB_HOST: ${REVERB_HOST:-127.0.0.1}
+      REVERB_BROADCAST_HOST: ${REVERB_BROADCAST_HOST:-reverb}
+      REVERB_PORT: ${REVERB_PORT:-8080}
+      REVERB_SCHEME: ${REVERB_SCHEME:-http}
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: 8080
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TELEGRAM_MIN_SEVERITY: ${TELEGRAM_MIN_SEVERITY:-high}
+      TELEGRAM_DEDUPE_MINUTES: ${TELEGRAM_DEDUPE_MINUTES:-15}
+      ARGOS_ALERT_RETENTION_DAYS: ${ARGOS_ALERT_RETENTION_DAYS:-30}
+      WAIT_FOR_DB: "1"
+      RUN_MIGRATIONS: "1"
+      RUN_SEED: ${RUN_SEED:-1}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "php",
+          "-r",
+          "exit(@file_get_contents('http://127.0.0.1:8000') === false ? 1 : 0);",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
+  reverb:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      <<: *api-env
+      RUN_MIGRATIONS: "0"
+      RUN_SEED: "0"
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+
+  queue:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      RUN_MIGRATIONS: "0"
+      RUN_SEED: "0"
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    command: ["php", "artisan", "queue:work", "--sleep=1", "--tries=3"]
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://127.0.0.1:8000}
+        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-argos-reverb-key}
+        VITE_REVERB_HOST: ${VITE_REVERB_HOST:-127.0.0.1}
+        VITE_REVERB_PORT: ${VITE_REVERB_PORT:-8080}
+        VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-http}
+        VITE_DEMO: ${VITE_DEMO:-false}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5173:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://127.0.0.1:8000}
+      VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-argos-reverb-key}
+      VITE_REVERB_HOST: ${VITE_REVERB_HOST:-127.0.0.1}
+      VITE_REVERB_PORT: ${VITE_REVERB_PORT:-8080}
+      VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-http}
+      VITE_DEMO: ${VITE_DEMO:-false}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  scanner:
+    profiles: [sensors]
+    build:
+      context: ./scanner
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      PYTHONUNBUFFERED: "1"
+      ARGOS_API_URL: ${ARGOS_API_URL:-http://127.0.0.1:8000}
+      ARGOS_SENSOR_TOKEN: ${SCANNER_TOKEN:-scanner-dev-token}
+      ARGOS_NETWORK_CIDR: ${ARGOS_NETWORK_CIDR:-}
+      ARGOS_DISCOVERY_MINUTES: ${ARGOS_DISCOVERY_MINUTES:-5}
+      ARGOS_NMAP_TIMING: ${ARGOS_NMAP_TIMING:--T3}
+      ARGOS_QUEUE_DIR: /app/.queue
+      ARGOS_AUTHORIZED_REFRESH: ${ARGOS_AUTHORIZED_REFRESH:-true}
+
+  suricata:
+    profiles: [sensors]
+    image: jasonish/suricata:7.0.17
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    volumes:
+      # jasonish entrypoint chowns config paths — cannot be :ro
+      - ./ids/suricata/suricata.docker.yaml:/etc/suricata/suricata.yaml
+      - ./ids/suricata/rules:/etc/suricata/rules
+      - suricata-logs:/var/log/suricata
+    command: ["-c", "/etc/suricata/suricata.yaml", "-i", "${ARGOS_IFACE:-enp4s0}"]
+
+  ids:
+    profiles: [sensors]
+    build:
+      context: ./ids
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      ARGOS_API_URL: ${ARGOS_API_URL:-http://127.0.0.1:8000}
+      ARGOS_SENSOR_TOKEN: ${IDS_TOKEN:-ids-dev-token}
+      ARGOS_EVE_PATH: /var/log/suricata/eve.json
+      ARGOS_IFACE: ${ARGOS_IFACE:-enp4s0}
+      ARGOS_QUEUE_DIR: /app/.queue
+      ARGOS_ENABLE_ARP_SPOOF: ${ARGOS_ENABLE_ARP_SPOOF:-false}
+    volumes:
+      - suricata-logs:/var/log/suricata:ro
+
+volumes:
+  db-data:
+  suricata-logs:

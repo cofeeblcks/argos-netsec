@@ -36,7 +36,8 @@ return [
             'secret' => env('REVERB_APP_SECRET'),
             'app_id' => env('REVERB_APP_ID'),
             'options' => [
-                'host' => env('REVERB_HOST'),
+                // Docker: set REVERB_BROADCAST_HOST=reverb so API/queue reach the Reverb service
+                'host' => env('REVERB_BROADCAST_HOST', env('REVERB_HOST')),
                 'port' => env('REVERB_PORT', 443),
                 'scheme' => env('REVERB_SCHEME', 'https'),
                 'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
