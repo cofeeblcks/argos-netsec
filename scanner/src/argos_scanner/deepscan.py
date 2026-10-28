@@ -27,42 +27,63 @@ def run_deep_scan(
     targets: list[str],
     timing: str = "-T3",
     mac_by_ip: dict[str, str] | None = None,
+    batch_size: int = 20,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return (device updates, services) from nmap -sV XML.
 
     OS fingerprint (-O) only when running as root; otherwise nmap aborts entirely.
+    Targets are scanned in batches so large inventories do not hit a single timeout.
     """
     if not targets or not shutil.which("nmap"):
         return [], []
 
-    cmd = [
-        "nmap",
-        "-Pn",  # don't skip hosts that ignore ICMP; still scan TCP
-        "-sV",
-        "--top-ports",
-        "100",
-        timing,
-        "-oX",
-        "-",
-        *targets,
-    ]
-    if _is_root():
-        cmd[3:3] = ["-O", "--osscan-guess"]
+    unique_targets = list(dict.fromkeys(targets))
+    devices: list[dict[str, Any]] = []
+    services: list[dict[str, Any]] = []
+    total = len(unique_targets)
+    print(f"[argos-scanner] nmap deep scan: {total} targets in batches of {batch_size}")
 
-    print(f"[argos-scanner] nmap targets ({len(targets)}): {', '.join(targets)}")
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=900, check=False)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        print(f"[argos-scanner] nmap failed: {exc}")
-        return [], []
+    for start in range(0, total, batch_size):
+        chunk = unique_targets[start : start + batch_size]
+        batch_no = start // batch_size + 1
+        batches = (total + batch_size - 1) // batch_size
+        print(f"[argos-scanner] nmap batch {batch_no}/{batches} ({len(chunk)} hosts)")
 
-    if not result.stdout.strip():
-        err = (result.stderr or "").strip()
-        if err:
-            print(f"[argos-scanner] nmap stderr: {err[:400]}")
-        return [], []
+        cmd = [
+            "nmap",
+            "-Pn",  # don't skip hosts that ignore ICMP; still scan TCP
+            "-sV",
+            "--top-ports",
+            "100",
+            timing,
+            "-oX",
+            "-",
+            *chunk,
+        ]
+        if _is_root():
+            cmd[3:3] = ["-O", "--osscan-guess"]
 
-    return parse_nmap_xml(result.stdout, mac_by_ip=mac_by_ip)
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=900, check=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            print(f"[argos-scanner] nmap batch {batch_no} failed: {exc}")
+            continue
+
+        if not result.stdout.strip():
+            err = (result.stderr or "").strip()
+            if err:
+                print(f"[argos-scanner] nmap batch {batch_no} stderr: {err[:400]}")
+            continue
+
+        batch_devices, batch_services = parse_nmap_xml(result.stdout, mac_by_ip=mac_by_ip)
+        devices.extend(batch_devices)
+        services.extend(batch_services)
+        print(
+            f"[argos-scanner] nmap batch {batch_no} done: "
+            f"{len(batch_devices)} hosts, {len(batch_services)} open ports"
+        )
+
+    return devices, services
 
 
 def parse_nmap_xml(

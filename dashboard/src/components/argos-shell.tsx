@@ -58,8 +58,8 @@ export function ArgosShell() {
             </MobileNavigationHeader>
 
             {/* Desktop header — Untitled UI Dashboards 02 / Dashboard 04 pattern */}
-            <header className="max-lg:hidden">
-                <section className="flex h-16 w-full items-center justify-center border-b border-secondary bg-primary">
+            <header className="sticky top-0 z-40 max-lg:hidden">
+                <section className="flex h-16 w-full items-center justify-center border-b border-secondary bg-primary/95 backdrop-blur-md">
                     <div className="flex w-full max-w-container items-center gap-8 pr-3 pl-4 md:px-8">
                         <ArgosLogo
                             onClick={(e) => {

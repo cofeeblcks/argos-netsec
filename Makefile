@@ -1,5 +1,5 @@
 .PHONY: setup contracts migrate dev scan ids test demo install-services \
-	docker-up docker-up-sensors docker-down docker-config help
+	docker-up docker-up-sensors docker-scan docker-down docker-config help
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -16,6 +16,7 @@ help:
 	@echo "  make install-services    Install systemd units from deploy/"
 	@echo "  make docker-up           Build/start core Compose stack"
 	@echo "  make docker-up-sensors   Start core + sensors profile"
+	@echo "  make docker-scan         Deep scan (nmap -sV) inside scanner container"
 	@echo "  make docker-down         Stop Compose stack (keeps volumes)"
 	@echo "  make docker-config       Validate compose.yaml"
 
@@ -86,6 +87,10 @@ docker-up:
 docker-up-sensors:
 	@test -f .env || cp .env.docker.example .env
 	docker compose --profile sensors up -d --build
+
+docker-scan:
+	@echo "Deep scan via contenedor scanner (puede tardar varios minutos)…"
+	docker compose --profile sensors run --rm --no-deps scanner python -u -m argos_scanner.main --deep
 
 docker-down:
 	docker compose --profile sensors down

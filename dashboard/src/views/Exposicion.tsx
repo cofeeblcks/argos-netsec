@@ -2,9 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { MetricCard } from "@/components/metric-card";
 import { Badge } from "@/components/base/badges/badges";
 import type { BadgeColors } from "@/components/base/badges/badge-types";
+import { Button } from "@/components/base/buttons/button";
+import { NativeSelect } from "@/components/base/select/select-native";
 import { Tabs } from "@/components/application/tabs/tabs";
-import { fetchDevices, fetchServices } from "@/data/source";
-import type { Device, Service, Severity } from "@/types/argos";
+import { fetchDevicesPage, fetchServicesPage, fetchSummary } from "@/data/source";
+import type { Device, PaginationMeta, Service, Severity, Summary } from "@/types/argos";
+import { cx } from "@/utils/cx";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 
 type HostScan = Device & {
     services: Service[];
@@ -15,20 +20,27 @@ type HostScan = Device & {
 
 export function ExposicionView() {
     const [services, setServices] = useState<Service[]>([]);
+    const [hostServices, setHostServices] = useState<Service[]>([]);
     const [devices, setDevices] = useState<Device[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [summary, setSummary] = useState<Summary | null>(null);
+    const [devicesMeta, setDevicesMeta] = useState<PaginationMeta | null>(null);
+    const [servicesMeta, setServicesMeta] = useState<PaginationMeta | null>(null);
+    const [devicePage, setDevicePage] = useState(1);
+    const [devicePerPage, setDevicePerPage] = useState(50);
+    const [servicePage, setServicePage] = useState(1);
+    const [servicePerPage, setServicePerPage] = useState(50);
+    const [loadingHosts, setLoadingHosts] = useState(true);
+    const [loadingServices, setLoadingServices] = useState(true);
     const [selectedKey, setSelectedKey] = useState<string>("hosts");
 
     useEffect(() => {
         let cancelled = false;
         void (async () => {
             try {
-                const [svc, devs] = await Promise.all([fetchServices(), fetchDevices()]);
-                if (cancelled) return;
-                setServices(svc);
-                setDevices(devs);
-            } finally {
-                if (!cancelled) setLoading(false);
+                const s = await fetchSummary();
+                if (!cancelled) setSummary(s);
+            } catch {
+                if (!cancelled) setSummary(null);
             }
         })();
         return () => {
@@ -36,26 +48,74 @@ export function ExposicionView() {
         };
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            setLoadingHosts(true);
+            try {
+                const devicesResult = await fetchDevicesPage({ page: devicePage, perPage: devicePerPage });
+                if (cancelled) return;
+                setDevices(devicesResult.data);
+                setDevicesMeta(devicesResult.pagination);
+
+                const ids = devicesResult.data.map((d) => d.id);
+                if (!ids.length) {
+                    setHostServices([]);
+                    return;
+                }
+                const enrichment = await fetchServicesPage({
+                    page: 1,
+                    perPage: Math.max(200, ids.length * 20),
+                    deviceIds: ids,
+                });
+                if (!cancelled) setHostServices(enrichment.data);
+            } finally {
+                if (!cancelled) setLoadingHosts(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [devicePage, devicePerPage]);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            setLoadingServices(true);
+            try {
+                const servicesResult = await fetchServicesPage({ page: servicePage, perPage: servicePerPage });
+                if (cancelled) return;
+                setServices(servicesResult.data);
+                setServicesMeta(servicesResult.pagination);
+            } finally {
+                if (!cancelled) setLoadingServices(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [servicePage, servicePerPage]);
+
     const hosts = useMemo<HostScan[]>(() => {
         const byDevice = new Map<number, Service[]>();
-        for (const s of services) {
+        for (const s of hostServices) {
             const list = byDevice.get(s.deviceId) ?? [];
             list.push(s);
             byDevice.set(s.deviceId, list);
         }
         return devices
             .map((d) => {
-                const hostServices = (byDevice.get(d.id) ?? []).slice().sort((a, b) => a.port - b.port);
+                const list = (byDevice.get(d.id) ?? []).slice().sort((a, b) => a.port - b.port);
                 return {
                     ...d,
-                    services: hostServices,
-                    openPorts: hostServices.length,
-                    cveCount: hostServices.reduce((n, s) => n + (s.cveIds?.length ?? 0), 0),
-                    maxSeverity: maxSeverity(hostServices.map((s) => s.severity)),
+                    services: list,
+                    openPorts: list.length,
+                    cveCount: list.reduce((n, s) => n + (s.cveIds?.length ?? 0), 0),
+                    maxSeverity: maxSeverity(list.map((s) => s.severity)),
                 };
             })
             .sort((a, b) => b.openPorts - a.openPorts || a.ip.localeCompare(b.ip));
-    }, [devices, services]);
+    }, [devices, hostServices]);
 
     const stats = useMemo(() => {
         const withOs = hosts.filter((h) => Boolean(h.osGuess)).length;
@@ -63,14 +123,16 @@ export function ExposicionView() {
         const highSev = services.filter((s) => s.severity === "high" || s.severity === "critical").length;
         const cves = new Set(services.flatMap((s) => s.cveIds ?? [])).size;
         return {
-            hosts: hosts.length,
+            hostsTotal: devicesMeta?.total ?? summary?.devicesTotal ?? hosts.length,
+            hostsPage: hosts.length,
             withPorts,
-            openPorts: services.length,
+            openPortsTotal: servicesMeta?.total ?? summary?.openPorts ?? services.length,
+            openPortsPage: services.length,
             withOs,
             highSev,
             cves,
         };
-    }, [hosts, services]);
+    }, [hosts, services, devicesMeta, servicesMeta, summary]);
 
     const portRows = useMemo(
         () =>
@@ -84,6 +146,8 @@ export function ExposicionView() {
         [services, devices],
     );
 
+    const networkHasServices = (servicesMeta?.total ?? summary?.openPorts ?? 0) > 0 || hostServices.length > 0;
+
     return (
         <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-1">
@@ -94,11 +158,19 @@ export function ExposicionView() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <MetricCard label="Hosts" value={stats.hosts} hint={`${stats.withPorts} con puertos`} />
-                <MetricCard label="Puertos abiertos" value={stats.openPorts} hint="Tras deep scan (nmap -sV)" />
-                <MetricCard label="SO detectado" value={stats.withOs} hint="Fingerprint o inferido" />
-                <MetricCard label="Severidad alta+" value={stats.highSev} hint="high / critical" accent={stats.highSev > 0} />
-                <MetricCard label="CVE únicos" value={stats.cves} hint="Desde scripts vulners" accent={stats.cves > 0} />
+                <MetricCard
+                    label="Hosts"
+                    value={stats.hostsTotal}
+                    hint={`Pág. ${devicePage}: ${stats.withPorts} con puertos`}
+                />
+                <MetricCard
+                    label="Puertos abiertos"
+                    value={stats.openPortsTotal}
+                    hint="Tras deep scan (nmap -sV)"
+                />
+                <MetricCard label="SO detectado" value={stats.withOs} hint="En esta página" />
+                <MetricCard label="Severidad alta+" value={stats.highSev} hint="En página de servicios" accent={stats.highSev > 0} />
+                <MetricCard label="CVE únicos" value={stats.cves} hint="En página de servicios" accent={stats.cves > 0} />
             </div>
 
             <Tabs selectedKey={selectedKey} onSelectionChange={(key) => setSelectedKey(String(key))} className="w-full">
@@ -107,116 +179,300 @@ export function ExposicionView() {
                 </Tabs.List>
 
                 <Tabs.Panel id="hosts" className="mt-6 outline-hidden">
-                    {loading ? (
+                    {loadingHosts ? (
                         <p className="text-sm text-tertiary">Cargando…</p>
                     ) : !hosts.length ? (
                         <EmptyScanHint />
                     ) : (
                         <div className="flex flex-col gap-4">
+                            {devicesMeta ? (
+                                <div className="overflow-hidden rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
+                                    <ListPagination
+                                        label="hosts"
+                                        placement="header"
+                                        page={devicesMeta.current_page}
+                                        totalPages={devicesMeta.total_pages}
+                                        totalItems={devicesMeta.total}
+                                        pageSize={devicePerPage}
+                                        onPageChange={setDevicePage}
+                                        onPageSizeChange={(size) => {
+                                            setDevicePerPage(size);
+                                            setDevicePage(1);
+                                        }}
+                                    />
+                                </div>
+                            ) : null}
                             {hosts.map((host) => (
-                                <HostScanCard
-                                    key={host.id}
-                                    host={host}
-                                    networkHasServices={stats.openPorts > 0}
-                                />
+                                <HostScanCard key={host.id} host={host} networkHasServices={networkHasServices} />
                             ))}
+                            {devicesMeta ? (
+                                <div className="overflow-hidden rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
+                                    <ListPagination
+                                        label="hosts"
+                                        placement="footer"
+                                        page={devicesMeta.current_page}
+                                        totalPages={devicesMeta.total_pages}
+                                        totalItems={devicesMeta.total}
+                                        pageSize={devicePerPage}
+                                        onPageChange={setDevicePage}
+                                        onPageSizeChange={(size) => {
+                                            setDevicePerPage(size);
+                                            setDevicePage(1);
+                                        }}
+                                    />
+                                </div>
+                            ) : null}
                         </div>
                     )}
                 </Tabs.Panel>
 
                 <Tabs.Panel id="ports" className="mt-6 outline-hidden">
-                    <SectionCard title="Escaneo de puertos" badge={String(portRows.length)} description="Puertos TCP/UDP abiertos por host">
-                        <table className="w-full">
-                            <thead className="bg-secondary">
-                                <tr>
-                                    {["Host", "IP", "Puerto", "Proto", "Estado", "Servicio", "Banner / versión"].map((h) => (
-                                        <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold text-quaternary">
-                                            {h}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {portRows.map(({ service: s, device }) => (
-                                    <tr key={s.id} className="border-t border-secondary hover:bg-secondary">
-                                        <td className="px-5 py-3.5 text-sm font-medium text-primary">
-                                            {device?.hostname || device?.mac || "—"}
-                                        </td>
-                                        <td className="px-5 py-3.5 font-mono text-sm text-tertiary">{device?.ip ?? "—"}</td>
-                                        <td className="px-5 py-3.5 text-sm font-medium text-primary">{s.port}</td>
-                                        <td className="px-5 py-3.5 text-sm uppercase text-tertiary">{s.protocol}</td>
-                                        <td className="px-5 py-3.5">
-                                            <Badge color="success" size="sm">
-                                                open
-                                            </Badge>
-                                        </td>
-                                        <td className="px-5 py-3.5 text-sm text-tertiary">{s.name ?? "unknown"}</td>
-                                        <td className="px-5 py-3.5 text-sm text-tertiary">{s.version ?? "—"}</td>
-                                    </tr>
-                                ))}
-                                {!loading && !portRows.length ? (
-                                    <tr>
-                                        <td colSpan={7} className="px-5 py-8 text-center text-sm text-tertiary">
-                                            Sin puertos. Ejecuta <code className="rounded bg-secondary px-1.5 py-0.5 text-primary">make scan</code>.
-                                        </td>
-                                    </tr>
+                    <SectionCard
+                        title="Escaneo de puertos"
+                        badge={String(stats.openPortsTotal)}
+                        description="Puertos TCP/UDP abiertos por host"
+                    >
+                        {loadingServices ? (
+                            <p className="px-5 py-8 text-sm text-tertiary">Cargando…</p>
+                        ) : (
+                            <>
+                                {servicesMeta && servicesMeta.total > 0 ? (
+                                    <ListPagination
+                                        label="puertos"
+                                        placement="header"
+                                        page={servicesMeta.current_page}
+                                        totalPages={servicesMeta.total_pages}
+                                        totalItems={servicesMeta.total}
+                                        pageSize={servicePerPage}
+                                        onPageChange={setServicePage}
+                                        onPageSizeChange={(size) => {
+                                            setServicePerPage(size);
+                                            setServicePage(1);
+                                        }}
+                                    />
                                 ) : null}
-                            </tbody>
-                        </table>
+                                <table className="w-full">
+                                    <thead className="bg-secondary">
+                                        <tr>
+                                            {["Host", "IP", "Puerto", "Proto", "Estado", "Servicio", "Banner / versión"].map((h) => (
+                                                <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold text-quaternary">
+                                                    {h}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {portRows.map(({ service: s, device }) => (
+                                            <tr key={s.id} className="border-t border-secondary hover:bg-secondary">
+                                                <td className="px-5 py-3.5 text-sm font-medium text-primary">
+                                                    {device?.hostname || device?.mac || s.deviceMac || "—"}
+                                                </td>
+                                                <td className="px-5 py-3.5 font-mono text-sm text-tertiary">{device?.ip ?? "—"}</td>
+                                                <td className="px-5 py-3.5 text-sm font-medium text-primary">{s.port}</td>
+                                                <td className="px-5 py-3.5 text-sm uppercase text-tertiary">{s.protocol}</td>
+                                                <td className="px-5 py-3.5">
+                                                    <Badge color="success" size="sm">
+                                                        open
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-sm text-tertiary">{s.name ?? "unknown"}</td>
+                                                <td className="px-5 py-3.5 text-sm text-tertiary">{s.version ?? "—"}</td>
+                                            </tr>
+                                        ))}
+                                        {!portRows.length ? (
+                                            <tr>
+                                                <td colSpan={7} className="px-5 py-8 text-center text-sm text-tertiary">
+                                                    Sin puertos. Ejecuta{" "}
+                                                    <code className="rounded bg-secondary px-1.5 py-0.5 text-primary">make scan</code>.
+                                                </td>
+                                            </tr>
+                                        ) : null}
+                                    </tbody>
+                                </table>
+                                {servicesMeta && servicesMeta.total > 0 ? (
+                                    <ListPagination
+                                        label="puertos"
+                                        placement="footer"
+                                        page={servicesMeta.current_page}
+                                        totalPages={servicesMeta.total_pages}
+                                        totalItems={servicesMeta.total}
+                                        pageSize={servicePerPage}
+                                        onPageChange={setServicePage}
+                                        onPageSizeChange={(size) => {
+                                            setServicePerPage(size);
+                                            setServicePage(1);
+                                        }}
+                                    />
+                                ) : null}
+                            </>
+                        )}
                     </SectionCard>
                 </Tabs.Panel>
 
                 <Tabs.Panel id="services" className="mt-6 outline-hidden">
-                    <SectionCard title="Servicios y vulnerabilidades" badge={String(services.length)} description="Identificación -sV, CVE y severidad">
-                        <table className="w-full">
-                            <thead className="bg-secondary">
-                                <tr>
-                                    {["Host", "MAC", "Puerto", "Proto", "Servicio", "Versión", "CVE", "Severidad", "Visto"].map((h) => (
-                                        <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold text-quaternary">
-                                            {h}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {services.map((s) => {
-                                    const device = devices.find((d) => d.id === s.deviceId);
-                                    return (
-                                        <tr key={s.id} className="border-t border-secondary hover:bg-secondary">
-                                            <td className="px-5 py-3.5 text-sm font-medium text-primary">
-                                                {device?.hostname || device?.ip || "—"}
-                                            </td>
-                                            <td className="px-5 py-3.5 font-mono text-sm text-tertiary">
-                                                {s.deviceMac ?? device?.mac ?? "—"}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-sm font-medium text-primary">{s.port}</td>
-                                            <td className="px-5 py-3.5 text-sm text-tertiary">{s.protocol}</td>
-                                            <td className="px-5 py-3.5 text-sm text-tertiary">{s.name ?? "—"}</td>
-                                            <td className="px-5 py-3.5 text-sm text-tertiary">{s.version ?? "—"}</td>
-                                            <td className="px-5 py-3.5 text-sm text-tertiary">
-                                                {s.cveIds?.length ? s.cveIds.join(", ") : "—"}
-                                            </td>
-                                            <td className="px-5 py-3.5">
-                                                <Badge color={sevColor(s.severity)} size="sm">
-                                                    {s.severity}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-5 py-3.5 text-sm text-tertiary">{formatWhen(s.lastSeen)}</td>
-                                        </tr>
-                                    );
-                                })}
-                                {!loading && !services.length ? (
-                                    <tr>
-                                        <td colSpan={9} className="px-5 py-8 text-center text-sm text-tertiary">
-                                            Sin servicios detectados todavía.
-                                        </td>
-                                    </tr>
+                    <SectionCard
+                        title="Servicios y vulnerabilidades"
+                        badge={String(stats.openPortsTotal)}
+                        description="Identificación -sV, CVE y severidad"
+                    >
+                        {loadingServices ? (
+                            <p className="px-5 py-8 text-sm text-tertiary">Cargando…</p>
+                        ) : (
+                            <>
+                                {servicesMeta && servicesMeta.total > 0 ? (
+                                    <ListPagination
+                                        label="servicios"
+                                        placement="header"
+                                        page={servicesMeta.current_page}
+                                        totalPages={servicesMeta.total_pages}
+                                        totalItems={servicesMeta.total}
+                                        pageSize={servicePerPage}
+                                        onPageChange={setServicePage}
+                                        onPageSizeChange={(size) => {
+                                            setServicePerPage(size);
+                                            setServicePage(1);
+                                        }}
+                                    />
                                 ) : null}
-                            </tbody>
-                        </table>
+                                <table className="w-full">
+                                    <thead className="bg-secondary">
+                                        <tr>
+                                            {["Host", "MAC", "Puerto", "Proto", "Servicio", "Versión", "CVE", "Severidad", "Visto"].map(
+                                                (h) => (
+                                                    <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold text-quaternary">
+                                                        {h}
+                                                    </th>
+                                                ),
+                                            )}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {services.map((s) => {
+                                            const device = devices.find((d) => d.id === s.deviceId);
+                                            return (
+                                                <tr key={s.id} className="border-t border-secondary hover:bg-secondary">
+                                                    <td className="px-5 py-3.5 text-sm font-medium text-primary">
+                                                        {device?.hostname || device?.ip || "—"}
+                                                    </td>
+                                                    <td className="px-5 py-3.5 font-mono text-sm text-tertiary">
+                                                        {s.deviceMac ?? device?.mac ?? "—"}
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-sm font-medium text-primary">{s.port}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-tertiary">{s.protocol}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-tertiary">{s.name ?? "—"}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-tertiary">{s.version ?? "—"}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-tertiary">
+                                                        {s.cveIds?.length ? s.cveIds.join(", ") : "—"}
+                                                    </td>
+                                                    <td className="px-5 py-3.5">
+                                                        <Badge color={sevColor(s.severity)} size="sm">
+                                                            {s.severity}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-sm text-tertiary">{formatWhen(s.lastSeen)}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {!services.length ? (
+                                            <tr>
+                                                <td colSpan={9} className="px-5 py-8 text-center text-sm text-tertiary">
+                                                    Sin servicios detectados todavía.
+                                                </td>
+                                            </tr>
+                                        ) : null}
+                                    </tbody>
+                                </table>
+                                {servicesMeta && servicesMeta.total > 0 ? (
+                                    <ListPagination
+                                        label="servicios"
+                                        placement="footer"
+                                        page={servicesMeta.current_page}
+                                        totalPages={servicesMeta.total_pages}
+                                        totalItems={servicesMeta.total}
+                                        pageSize={servicePerPage}
+                                        onPageChange={setServicePage}
+                                        onPageSizeChange={(size) => {
+                                            setServicePerPage(size);
+                                            setServicePage(1);
+                                        }}
+                                    />
+                                ) : null}
+                            </>
+                        )}
                     </SectionCard>
                 </Tabs.Panel>
             </Tabs>
+        </div>
+    );
+}
+
+function ListPagination({
+    label,
+    page,
+    totalPages,
+    totalItems,
+    pageSize,
+    placement = "footer",
+    onPageChange,
+    onPageSizeChange,
+}: {
+    label: string;
+    page: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+    placement?: "header" | "footer";
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+}) {
+    const pages = Math.max(1, totalPages);
+    const current = Math.min(Math.max(1, page), pages);
+
+    return (
+        <div
+            className={cx(
+                "px-4 py-3 md:px-5",
+                placement === "header" ? "border-b border-secondary" : "border-t border-secondary",
+            )}
+        >
+            <nav
+                aria-label={`Paginación de ${label} (${placement === "header" ? "arriba" : "abajo"})`}
+                className={cx("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between")}
+            >
+                <p className="text-sm text-tertiary">
+                    {totalItems} {label} · página {current} de {pages}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                    <NativeSelect
+                        aria-label={`Registros por página (${label})`}
+                        className="w-auto"
+                        size="sm"
+                        value={String(pageSize)}
+                        onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                        options={PAGE_SIZE_OPTIONS.map((n) => ({
+                            label: `${n} / página`,
+                            value: String(n),
+                        }))}
+                        selectClassName="min-w-32"
+                    />
+                    <Button
+                        color="secondary"
+                        size="sm"
+                        isDisabled={current <= 1}
+                        onClick={() => onPageChange(current - 1)}
+                    >
+                        Anterior
+                    </Button>
+                    <Button
+                        color="secondary"
+                        size="sm"
+                        isDisabled={current >= pages}
+                        onClick={() => onPageChange(current + 1)}
+                    >
+                        Siguiente
+                    </Button>
+                </div>
+            </nav>
         </div>
     );
 }
@@ -378,11 +634,11 @@ function EmptyScanHint() {
     );
 }
 
-function tabItems(stats: { hosts: number; openPorts: number }) {
+function tabItems(stats: { hostsTotal: number; openPortsTotal: number }) {
     return [
-        { id: "hosts", label: "Hosts / SO" },
-        { id: "ports", label: "Puertos", badge: stats.openPorts },
-        { id: "services", label: "Servicios", badge: stats.openPorts },
+        { id: "hosts", label: "Hosts / SO", badge: stats.hostsTotal },
+        { id: "ports", label: "Puertos", badge: stats.openPortsTotal },
+        { id: "services", label: "Servicios", badge: stats.openPortsTotal },
     ];
 }
 

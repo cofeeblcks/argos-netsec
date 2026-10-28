@@ -1,4 +1,5 @@
 import { storage } from "@/lib/storage";
+import type { PaginationMeta } from "@/types/argos";
 
 export class ApiError extends Error {
     status: number;
@@ -18,7 +19,17 @@ type RequestOptions = {
     auth?: boolean;
 };
 
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+type ApiEnvelope<T> = {
+    status?: string;
+    message?: string;
+    data?: T;
+    errors?: Record<string, string[]>;
+    meta?: {
+        pagination?: PaginationMeta;
+    };
+};
+
+async function requestEnvelope<T>(path: string, options: RequestOptions = {}): Promise<ApiEnvelope<T>> {
     const base = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
     const { method = "GET", body, auth = true } = options;
 
@@ -43,12 +54,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
-    let json: {
-        status?: string;
-        message?: string;
-        data?: T;
-        errors?: Record<string, string[]>;
-    } = {};
+    let json: ApiEnvelope<T> = {};
 
     try {
         json = await res.json();
@@ -60,5 +66,21 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         throw new ApiError(json.message || `Error HTTP ${res.status}`, res.status, json.errors);
     }
 
+    return json;
+}
+
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+    const json = await requestEnvelope<T>(path, options);
     return (json.data ?? json) as T;
+}
+
+export async function apiRequestPaginated<T>(
+    path: string,
+    options: RequestOptions = {},
+): Promise<{ data: T; pagination: PaginationMeta | null }> {
+    const json = await requestEnvelope<T>(path, options);
+    return {
+        data: (json.data ?? []) as T,
+        pagination: json.meta?.pagination ?? null,
+    };
 }

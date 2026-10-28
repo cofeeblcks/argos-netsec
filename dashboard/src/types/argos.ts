@@ -1,6 +1,19 @@
 export type Severity = "unknown" | "low" | "medium" | "high" | "critical";
 export type AlertStatus = "open" | "acked" | "false_positive";
 
+export interface PaginationMeta {
+    total: number;
+    count: number;
+    per_page: number;
+    current_page: number;
+    total_pages: number;
+}
+
+export interface PaginatedResult<T> {
+    data: T[];
+    pagination: PaginationMeta;
+}
+
 export interface Device {
     id: number;
     mac: string;

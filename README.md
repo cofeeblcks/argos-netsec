@@ -19,8 +19,11 @@ make docker-up                   # o: docker compose up -d --build
 # Login seed: admin@argos.local / password
 
 make docker-up-sensors           # o: docker compose --profile sensors up -d
+make docker-scan                 # deep scan nmap -sV (llena Exposición / puertos)
 make docker-down                 # para el stack; no borra volúmenes
 ```
+
+El contenedor `scanner` solo hace **discovery** periódico. Los puertos/servicios de Exposición requieren un **deep scan** (`make docker-scan` o `make scan` en nativo).
 
 Ajusta `ARGOS_IFACE` en `.env` a tu NIC LAN. ARP spoof en contenedor queda en `ARGOS_ENABLE_ARP_SPOOF=false` por defecto.
 
