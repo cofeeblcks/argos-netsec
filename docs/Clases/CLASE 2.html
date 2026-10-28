@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OVA · Clase 2 · Del alcance al stack técnico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --accent:#10b981;
+    --accent-2:#34d399;
+    --accent-3:#a3e635;
+    --accent-glow:rgba(16,185,129,.35);
+    --violet:#8b5cf6;
+    --violet-2:#a78bfa;
+    --blue:#3b82f6;
+    --amber:#f59e0b;
+    --red:#ef4444;
+    --radius-sm:8px;
+    --radius:14px;
+    --radius-lg:20px;
+    --radius-xl:28px;
+    --transition:.35s cubic-bezier(.4,0,.2,1);
+    --font:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  [data-theme="dark"]{
+    --bg:#0a0f1c;--bg-2:#0f1729;--bg-3:#141d33;
+    --surface:#141d33;--surface-2:#1a2540;--surface-3:#1f2c4a;
+    --border:rgba(148,163,184,.12);--border-2:rgba(148,163,184,.2);
+    --text:#e2e8f0;--text-2:#94a3b8;--text-3:#64748b;--text-bright:#f8fafc;
+    --shadow:0 10px 40px -10px rgba(0,0,0,.5);
+    --shadow-sm:0 4px 16px -4px rgba(0,0,0,.4);
+    --glass:rgba(20,29,51,.7);
+  }
+  [data-theme="light"]{
+    --bg:#f8fafc;--bg-2:#ffffff;--bg-3:#f1f5f9;
+    --surface:#ffffff;--surface-2:#f8fafc;--surface-3:#f1f5f9;
+    --border:rgba(15,23,42,.08);--border-2:rgba(15,23,42,.14);
+    --text:#1e293b;--text-2:#64748b;--text-3:#94a3b8;--text-bright:#0f172a;
+    --shadow:0 10px 40px -10px rgba(15,23,42,.12);
+    --shadow-sm:0 4px 16px -4px rgba(15,23,42,.08);
+    --glass:rgba(255,255,255,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:var(--font);background:var(--bg);color:var(--text);
+    line-height:1.65;font-size:15px;
+    transition:background var(--transition),color var(--transition);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    min-height:100vh;display:flex;flex-direction:column;
+  }
+  [data-theme="dark"] body{
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%,rgba(16,185,129,.08),transparent),
+      radial-gradient(ellipse 60% 40% at 90% 10%,rgba(139,92,246,.06),transparent);
+    background-attachment:fixed;
+  }
+
+  /* TOPBAR */
+  .topbar{
+    position:sticky;top:0;z-index:100;
+    background:var(--glass);backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{
+    max-width:1400px;margin:0 auto;padding:14px 24px;
+    display:flex;align-items:center;gap:18px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+  .brand-logo{
+    width:40px;height:40px;border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-3));
+    display:flex;align-items:center;justify-content:center;
+    color:#0a0f1c;font-family:var(--mono);font-weight:800;font-size:17px;
+    box-shadow:0 4px 16px var(--accent-glow);
+  }
+  .brand-text{line-height:1.2;}
+  .brand-text strong{display:block;font-size:.95rem;font-weight:800;color:var(--text-bright);letter-spacing:-.02em;}
+  .brand-text span{font-size:.72rem;color:var(--text-2);font-family:var(--mono);letter-spacing:.3px;}
+  .topbar-divider{width:1px;height:32px;background:var(--border-2);flex-shrink:0;}
+  .class-pill{
+    display:flex;align-items:center;gap:8px;padding:6px 14px;
+    background:var(--surface-2);border:1px solid var(--border-2);border-radius:999px;
+    font-size:.78rem;font-weight:600;color:var(--text-2);flex-shrink:0;
+  }
+  .class-pill .dot{
+    width:7px;height:7px;background:var(--accent);border-radius:50%;
+    box-shadow:0 0 10px var(--accent);animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
+  .topbar-progress{flex:1;max-width:280px;display:flex;align-items:center;gap:10px;}
+  .topbar-progress .label{font-size:.72rem;color:var(--text-3);font-family:var(--mono);white-space:nowrap;}
+  .topbar-progress .track{flex:1;height:6px;background:var(--surface-3);border-radius:999px;overflow:hidden;}
+  .topbar-progress .fill{
+    height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-3));
+    width:0%;transition:width .5s cubic-bezier(.4,0,.2,1);
+    border-radius:999px;box-shadow:0 0 10px var(--accent-glow);
+  }
+  .topbar-progress .pct{font-size:.78rem;font-weight:800;color:var(--accent);font-family:var(--mono);min-width:36px;text-align:right;}
+  .topbar-actions{display:flex;gap:8px;margin-left:auto;align-items:center;}
+  .icon-btn{
+    width:38px;height:38px;border-radius:10px;background:var(--surface-2);
+    border:1px solid var(--border-2);color:var(--text-2);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;
+  }
+  .icon-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--surface-3);transform:translateY(-1px);}
+  .icon-btn svg{width:18px;height:18px;stroke-width:2;}
+
+  /* DASHBOARD */
+  .dashboard{
+    flex:1;max-width:1400px;width:100%;margin:0 auto;
+    padding:28px 24px 40px;display:grid;grid-template-columns:260px 1fr;
+    gap:24px;align-items:start;
+  }
+
+  /* SIDEBAR */
+  .sidebar{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:20px 14px;
+    position:sticky;top:90px;max-height:calc(100vh - 110px);
+    overflow-y:auto;box-shadow:var(--shadow-sm);
+  }
+  .sidebar::-webkit-scrollbar{width:5px;}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+  .sidebar-title{
+    font-size:.68rem;font-family:var(--mono);text-transform:uppercase;
+    letter-spacing:1.2px;color:var(--text-3);font-weight:700;margin:0 0 12px 10px;
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;
+    color:var(--text-2);text-decoration:none;font-size:.84rem;font-weight:500;
+    transition:all .18s;margin-bottom:2px;cursor:pointer;border:1px solid transparent;
+  }
+  .nav-item:hover{background:var(--surface-2);color:var(--text);}
+  .nav-item.active{background:rgba(16,185,129,.1);color:var(--accent);border-color:rgba(16,185,129,.25);font-weight:700;}
+  .nav-item .num{font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--text-3);min-width:20px;flex-shrink:0;}
+  .nav-item.active .num{color:var(--accent);}
+  .nav-item .check{margin-left:auto;width:15px;height:15px;opacity:0;transition:opacity .2s;color:var(--accent);flex-shrink:0;}
+  .nav-item.done .check{opacity:1;}
+  .nav-item.done .num{color:var(--accent);}
+
+  /* MAIN */
+  .main{min-width:0;display:flex;flex-direction:column;gap:24px;}
+
+  /* CARD STAGE */
+  .card-stage{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-xl);box-shadow:var(--shadow);
+    padding:40px 44px;position:relative;display:none;
+    animation:cardIn .45s cubic-bezier(.4,0,.2,1);
+  }
+  .card-stage.active{display:block;}
+  .card-stage::before{
+    content:'';position:absolute;top:0;left:44px;right:44px;height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--violet),var(--accent-3));
+    border-radius:0 0 3px 3px;opacity:.9;
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+  /* TYPO */
+  .sec-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);
+    font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--accent);margin-bottom:14px;
+  }
+  .sec-eyebrow::before{content:'';width:20px;height:2px;background:var(--accent);border-radius:2px;}
+  .sec-title{
+    font-size:clamp(1.5rem,3vw,2.1rem);font-weight:800;letter-spacing:-.03em;
+    line-height:1.15;color:var(--text-bright);margin-bottom:12px;
+  }
+  .sec-desc{font-size:.96rem;color:var(--text-2);max-width:720px;line-height:1.7;margin-bottom:8px;}
+  h3{
+    font-size:1.08rem;font-weight:700;color:var(--text-bright);letter-spacing:-.01em;
+    margin:24px 0 12px;display:flex;align-items:center;gap:10px;
+  }
+  h3::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px;}
+  p{margin-bottom:12px;color:var(--text);}
+  ul,ol{margin:10px 0 14px 22px;color:var(--text);}
+  li{margin-bottom:7px;line-height:1.65;}
+  li strong{color:var(--text-bright);font-weight:700;}
+
+  /* CARD */
+  .card{
+    background:var(--surface-2);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px 24px;margin-bottom:14px;
+  }
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0;}
+  .feature-card{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;transition:all .25s;position:relative;overflow:hidden;
+  }
+  .feature-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-3));opacity:0;transition:opacity .25s;
+  }
+  .feature-card:hover{transform:translateY(-3px);border-color:rgba(16,185,129,.3);box-shadow:var(--shadow-sm);}
+  .feature-card:hover::before{opacity:1;}
+  .feature-card .icon-box{
+    width:42px;height:42px;border-radius:11px;background:rgba(16,185,129,.1);
+    color:var(--accent);display:flex;align-items:center;justify-content:center;
+    margin-bottom:12px;border:1px solid rgba(16,185,129,.2);
+  }
+  .feature-card .icon-box svg{width:21px;height:21px;}
+  .feature-card h4{font-size:.95rem;font-weight:700;color:var(--text-bright);margin-bottom:6px;}
+  .feature-card p{font-size:.85rem;color:var(--text-2);margin:0;line-height:1.6;}
+
+  /* CALLOUTS */
+  .callout{
+    border-radius:var(--radius);padding:16px 20px;margin:16px 0;
+    display:flex;gap:14px;align-items:flex-start;border:1px solid;
+    font-size:.9rem;line-height:1.65;
+  }
+  .callout-icon{
+    flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;
+    justify-content:center;border-radius:6px;margin-top:1px;
+  }
+  .callout-icon svg{width:15px;height:15px;}
+  .callout-body{flex:1;min-width:0;}
+  .callout-body strong{display:block;margin-bottom:4px;font-weight:700;}
+  .callout.info{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.25);}
+  .callout.info .callout-icon{background:rgba(59,130,246,.15);color:var(--blue);}
+  .callout.info strong{color:var(--blue);}
+  .callout.warn{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25);}
+  .callout.warn .callout-icon{background:rgba(245,158,11,.15);color:var(--amber);}
+  .callout.warn strong{color:var(--amber);}
+  .callout.success{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.25);}
+  .callout.success .callout-icon{background:rgba(16,185,129,.15);color:var(--accent);}
+  .callout.success strong{color:var(--accent);}
+  .callout.violet{background:rgba(139,92,246,.06);border-color:rgba(139,92,246,.25);}
+  .callout.violet .callout-icon{background:rgba(139,92,246,.15);color:var(--violet);}
+  .callout.violet strong{color:var(--violet-2);}
+
+  /* HERO */
+  .hero{
+    background:linear-gradient(135deg,var(--surface-2),var(--surface-3));
+    border:1px solid var(--border);border-radius:var(--radius-xl);
+    padding:44px 40px;position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;top:-50%;right:-10%;width:600px;height:600px;
+    background:radial-gradient(circle,rgba(16,185,129,.15),transparent 70%);pointer-events:none;
+  }
+  .hero::after{
+    content:'';position:absolute;bottom:-40%;left:-10%;width:500px;height:500px;
+    background:radial-gradient(circle,rgba(139,92,246,.1),transparent 70%);pointer-events:none;
+  }
+  .hero-content{position:relative;z-index:2;max-width:640px;}
+  .hero-tag{
+    display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.1);
+    border:1px solid rgba(16,185,129,.3);color:var(--accent);
+    padding:7px 16px;border-radius:999px;font-size:.74rem;font-weight:700;
+    font-family:var(--mono);letter-spacing:.5px;margin-bottom:20px;
+  }
+  .hero-tag svg{width:14px;height:14px;}
+  .hero h1{
+    font-size:clamp(1.8rem,3.8vw,2.6rem);font-weight:800;
+    letter-spacing:-.035em;line-height:1.1;color:var(--text-bright);margin-bottom:16px;
+  }
+  .hero h1 .gradient-text{
+    background:linear-gradient(135deg,var(--accent),var(--accent-3));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .hero p{font-size:1rem;color:var(--text-2);line-height:1.7;margin-bottom:24px;}
+  .hero-meta{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:26px;}
+  .hero-meta-item{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--text-2);}
+  .hero-meta-item svg{width:16px;height:16px;color:var(--accent);}
+  .hero-illustration{
+    position:absolute;top:50%;right:32px;transform:translateY(-50%);
+    width:280px;height:280px;opacity:.9;pointer-events:none;z-index:1;
+  }
+  @media(max-width:1100px){.hero-illustration{display:none;}}
+  .hero-illustration svg{width:100%;height:100%;}
+  .node-pulse{animation:nodePulse 3s ease-in-out infinite;}
+  @keyframes nodePulse{0%,100%{opacity:.6;r:5;}50%{opacity:1;r:7;}}
+  .line-flow{stroke-dasharray:6 4;animation:dashFlow 3s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-20;}}
+
+  /* BUTTONS */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    padding:12px 24px;border-radius:11px;font-family:var(--font);
+    font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;
+    border:none;letter-spacing:-.01em;
+  }
+  .btn svg{width:16px;height:16px;}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#0a0f1c;box-shadow:0 6px 20px var(--accent-glow);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px var(--accent-glow);}
+  .btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border-2);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-ghost{background:transparent;color:var(--accent);border:1px solid rgba(16,185,129,.3);}
+  .btn-ghost:hover{background:rgba(16,185,129,.08);border-color:var(--accent);}
+  .btn-sm{padding:9px 16px;font-size:.82rem;}
+
+  /* TIMELINE */
+  .timeline{position:relative;margin:20px 0;padding-left:30px;}
+  .timeline::before{
+    content:'';position:absolute;left:10px;top:8px;bottom:8px;width:2px;
+    background:linear-gradient(180deg,var(--accent),var(--violet),transparent);
+  }
+  .timeline-item{
+    position:relative;margin-bottom:16px;padding:14px 18px;
+    background:var(--surface-2);border:1px solid var(--border);
+    border-radius:var(--radius);transition:all .2s;
+  }
+  .timeline-item:hover{border-color:var(--border-2);transform:translateX(3px);}
+  .timeline-item::before{
+    content:'';position:absolute;left:-27px;top:20px;width:10px;height:10px;
+    border-radius:50%;background:var(--accent);border:3px solid var(--surface);
+    box-shadow:0 0 0 2px var(--accent),0 0 12px var(--accent-glow);
+  }
+  .timeline-item .time-label{font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-bottom:4px;}
+  .timeline-item .time-title{font-size:.92rem;font-weight:700;color:var(--text-bright);margin-bottom:3px;}
+  .timeline-item .time-desc{font-size:.83rem;color:var(--text-2);margin:0;}
+
+  /* TABLES */
+  .table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;background:var(--surface-2);}
+  table{width:100%;border-collapse:collapse;font-size:.87rem;}
+  th{
+    background:var(--surface-3);color:var(--text-bright);font-weight:700;
+    padding:12px 14px;text-align:left;font-size:.75rem;text-transform:uppercase;
+    letter-spacing:.5px;border-bottom:1px solid var(--border-2);
+  }
+  td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;line-height:1.6;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr{transition:background .15s;}
+  tbody tr:hover{background:var(--surface-3);}
+  td strong{color:var(--text-bright);}
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;padding:3px 9px;
+    border-radius:6px;font-family:var(--mono);font-size:.68rem;
+    font-weight:700;letter-spacing:.3px;white-space:nowrap;
+  }
+  .badge.green{background:rgba(16,185,129,.12);color:var(--accent);border:1px solid rgba(16,185,129,.25);}
+  .badge.violet{background:rgba(139,92,246,.12);color:var(--violet-2);border:1px solid rgba(139,92,246,.25);}
+  .badge.blue{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25);}
+  .badge.amber{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25);}
+  .badge.red{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+
+  /* QUIZ */
+  .quiz{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:20px 0;}
+  .quiz-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .quiz-badge{
+    padding:4px 10px;background:rgba(139,92,246,.12);color:var(--violet-2);
+    border:1px solid rgba(139,92,246,.3);border-radius:6px;font-family:var(--mono);
+    font-size:.7rem;font-weight:700;letter-spacing:.5px;
+  }
+  .quiz-q{font-size:.98rem;font-weight:700;color:var(--text-bright);margin-bottom:16px;line-height:1.5;}
+  .quiz-options{display:flex;flex-direction:column;gap:9px;}
+  .quiz-option{
+    display:flex;align-items:center;gap:12px;padding:13px 16px;
+    background:var(--surface-3);border:1.5px solid var(--border-2);
+    border-radius:10px;cursor:pointer;transition:all .18s;font-size:.88rem;
+    color:var(--text);text-align:left;font-family:var(--font);
+  }
+  .quiz-option:hover{border-color:var(--accent);background:var(--surface);}
+  .quiz-option .radio{
+    width:18px;height:18px;border-radius:50%;border:2px solid var(--border-2);
+    flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;
+  }
+  .quiz-option .radio::after{
+    content:'';width:8px;height:8px;border-radius:50%;background:var(--accent);
+    transform:scale(0);transition:transform .2s;
+  }
+  .quiz-option.selected{border-color:var(--accent);background:rgba(16,185,129,.06);}
+  .quiz-option.selected .radio{border-color:var(--accent);}
+  .quiz-option.selected .radio::after{transform:scale(1);}
+  .quiz-option.correct{border-color:var(--accent);background:rgba(16,185,129,.1);}
+  .quiz-option.correct .radio{border-color:var(--accent);background:var(--accent);}
+  .quiz-option.correct .radio::after{background:#0a0f1c;}
+  .quiz-option.wrong{border-color:var(--red);background:rgba(239,68,68,.08);}
+  .quiz-option.wrong .radio{border-color:var(--red);}
+  .quiz-option.wrong .radio::after{background:var(--red);transform:scale(1);}
+  .quiz-option.disabled{cursor:not-allowed;pointer-events:none;}
+  .quiz-feedback{margin-top:14px;padding:14px 18px;border-radius:10px;font-size:.87rem;display:none;line-height:1.6;}
+  .quiz-feedback.show{display:block;animation:cardIn .3s ease;}
+  .quiz-feedback.ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);}
+  .quiz-feedback.ok strong{color:var(--accent);}
+  .quiz-feedback.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);}
+  .quiz-feedback.err strong{color:var(--red);}
+  .quiz-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+
+  /* PROGRESS */
+  .progress-block{
+    background:linear-gradient(135deg,var(--surface-2),var(--surface-3));
+    border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 26px;margin:18px 0;
+  }
+  .progress-block .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .progress-block .head h4{font-size:.92rem;font-weight:700;color:var(--text-bright);margin:0;}
+  .progress-block .head .val{font-family:var(--mono);font-size:.86rem;font-weight:800;color:var(--accent);}
+  .progress-track{height:9px;background:var(--surface-3);border-radius:999px;overflow:hidden;position:relative;}
+  .progress-fill{
+    height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-3));
+    width:0%;transition:width .5s ease;border-radius:999px;box-shadow:0 0 12px var(--accent-glow);
+  }
+  .progress-sub{font-size:.76rem;color:var(--text-3);margin-top:8px;font-family:var(--mono);}
+
+  /* FORMS */
+  .form-card{
+    background:var(--surface-2);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;margin:20px 0;
+    position:relative;overflow:hidden;
+  }
+  .form-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--violet));
+  }
+  .form-card-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
+  .form-card-header .badge-form{
+    padding:4px 10px;background:rgba(16,185,129,.12);color:var(--accent);
+    border:1px solid rgba(16,185,129,.3);border-radius:6px;font-family:var(--mono);
+    font-size:.7rem;font-weight:700;letter-spacing:.5px;
+  }
+  .form-card-header h4{font-size:1rem;font-weight:700;color:var(--text-bright);margin:0;}
+  .form-card-desc{font-size:.84rem;color:var(--text-2);margin-bottom:18px;line-height:1.6;}
+  .form-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .form-field{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .form-field.full{flex:1 1 100%;}
+  .form-field label{
+    font-size:.76rem;font-weight:700;color:var(--text-2);text-transform:uppercase;
+    letter-spacing:.4px;font-family:var(--mono);
+  }
+  .form-field label .req{color:var(--red);margin-left:2px;}
+  .form-field input,.form-field textarea,.form-field select{
+    background:var(--bg-2);border:1.5px solid var(--border-2);border-radius:10px;
+    padding:10px 13px;color:var(--text-bright);font-size:.88rem;
+    font-family:var(--font);width:100%;transition:all .18s;
+  }
+  .form-field textarea{resize:vertical;min-height:76px;line-height:1.55;}
+  .form-field input:focus,.form-field textarea:focus,.form-field select:focus{
+    outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.12);
+  }
+  .form-field input::placeholder,.form-field textarea::placeholder{color:var(--text-3);opacity:.7;}
+
+  /* EDIT TABLE */
+  .edit-table-wrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:14px 0;background:var(--bg-2);}
+  .edit-table-wrap table{font-size:.85rem;}
+  .edit-table-wrap th{font-size:.7rem;padding:10px 11px;background:var(--surface-3);}
+  .edit-table-wrap td{padding:9px 11px;}
+  .edit-table-wrap input,.edit-table-wrap textarea,.edit-table-wrap select{
+    background:var(--surface-3);border:1px solid var(--border-2);border-radius:7px;
+    padding:8px 10px;color:var(--text-bright);font-size:.83rem;
+    font-family:var(--font);width:100%;transition:all .18s;
+  }
+  .edit-table-wrap textarea{resize:vertical;min-height:52px;line-height:1.5;}
+  .edit-table-wrap input:focus,.edit-table-wrap textarea:focus,.edit-table-wrap select:focus{
+    outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,185,129,.1);
+  }
+  .btn-remove{
+    background:transparent;border:1px solid rgba(239,68,68,.3);color:#f87171;
+    padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.74rem;
+    font-weight:600;transition:all .18s;font-family:var(--font);
+  }
+  .btn-remove:hover{background:rgba(239,68,68,.1);border-color:var(--red);}
+  .empty-msg{text-align:center;padding:18px;color:var(--text-3);font-size:.83rem;font-style:italic;}
+  .msg{border-radius:10px;padding:11px 15px;font-size:.84rem;margin-top:12px;display:none;font-weight:600;}
+  .msg.show{display:block;animation:cardIn .25s ease;}
+  .msg.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--accent);}
+  .msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+
+  /* COMPLETE */
+  .complete-banner{
+    background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(163,230,53,.05));
+    border:1px solid rgba(16,185,129,.3);border-radius:var(--radius-lg);
+    padding:26px;text-align:center;margin:20px 0;
+  }
+  .complete-banner .icon{
+    width:56px;height:56px;background:var(--accent);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
+    color:#0a0f1c;box-shadow:0 0 30px var(--accent-glow);
+  }
+  .complete-banner .icon svg{width:28px;height:28px;stroke-width:2.5;}
+  .complete-banner h3{border:none;padding:0;margin:0 0 8px;justify-content:center;color:var(--accent);font-size:1.15rem;}
+  .complete-banner h3::before{display:none;}
+  .complete-banner p{color:var(--text-2);margin-bottom:18px;font-size:.92rem;}
+
+  /* CARD FOOTER */
+  .card-footer{
+    margin-top:32px;padding-top:24px;border-top:1px solid var(--border);
+    display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .card-footer .step-hint{font-family:var(--mono);font-size:.74rem;color:var(--text-3);letter-spacing:.5px;margin-right:auto;}
+  .card-footer .step-hint strong{color:var(--accent);}
+  .btn-continue{padding:14px 32px;font-size:.95rem;border-radius:12px;}
+
+  /* SIDEBAR TOGGLE */
+  .hamburger{display:none;}
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;}
+
+  footer{
+    border-top:1px solid var(--border);padding:20px 24px;text-align:center;
+    font-size:.76rem;color:var(--text-3);font-family:var(--mono);letter-spacing:.3px;
+  }
+
+  @media(max-width:1000px){
+    .dashboard{grid-template-columns:1fr;gap:18px;padding:20px 16px 30px;}
+    .hamburger{display:flex;}
+    .sidebar{
+      position:fixed;top:0;left:0;bottom:0;width:280px;max-height:100vh;
+      transform:translateX(-100%);transition:transform .3s ease;z-index:200;
+      border-radius:0;box-shadow:0 0 40px rgba(0,0,0,.4);
+    }
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-backdrop.open{display:block;}
+    .card-stage{padding:28px 22px;border-radius:var(--radius-lg);}
+    .card-stage::before{left:22px;right:22px;}
+    .hero{padding:32px 24px;}
+    .card-grid{grid-template-columns:1fr;}
+    .card-footer{flex-direction:column-reverse;}
+    .card-footer .btn-continue{width:100%;}
+    .card-footer .step-hint{width:100%;text-align:center;margin:0;}
+    table{font-size:.8rem;}
+    th,td{padding:9px 10px;}
+    .form-card,.quiz{padding:18px;}
+    .brand-text span{display:none;}
+    .class-pill{display:none;}
+    .topbar-divider{display:none;}
+    .topbar-inner{padding:12px 16px;gap:10px;}
+    .topbar-progress{max-width:120px;}
+  }
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn hamburger" id="hamburger" aria-label="Abrir menú">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round"/></svg>
+    </button>
+    <div class="brand">
+      <div class="brand-logo">&gt;_</div>
+      <div class="brand-text">
+        <strong>SecNet Academy</strong>
+        <span>OVA · Clase 02</span>
+      </div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="class-pill"><span class="dot"></span>Clase 2 de 5</div>
+    <div class="topbar-progress">
+      <span class="label">Progreso</span>
+      <div class="track"><div class="fill" id="topbarFill"></div></div>
+      <span class="pct" id="topbarPct">0%</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">Contenido de la clase</div>
+    <a class="nav-item active" data-section="0" href="#c0"><span class="num">00</span> Portada<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="1" href="#c1"><span class="num">01</span> Repaso<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="2" href="#c2"><span class="num">02</span> Lenguaje<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="3" href="#c3"><span class="num">03</span> FORM Lenguaje<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="4" href="#c4"><span class="num">04</span> Agente IA<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="5" href="#c5"><span class="num">05</span> FORM Agente<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="6" href="#c6"><span class="num">06</span> Infraestructura<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="7" href="#c7"><span class="num">07</span> FORM Componentes<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="8" href="#c8"><span class="num">08</span> Coherencia<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="9" href="#c9"><span class="num">09</span> Evidencia y descarga<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+  </aside>
+  <div class="sidebar-backdrop" id="backdrop"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- CARD 0: PORTADA -->
+    <div class="card-stage active" id="c0">
+      <div class="hero">
+        <div class="hero-content">
+          <div class="hero-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            OVA · Clase 2 de 5
+          </div>
+          <h1>Del alcance al <span class="gradient-text">stack técnico</span>: decide con qué construirás tu herramienta</h1>
+          <p>Ya tienes la idea y el alcance. Hoy tomas las tres decisiones técnicas que definirán tu implementación: lenguaje de programación, agente de IA para el desarrollo y arquitectura de infraestructura. Cada decisión debe justificarse técnicamente.</p>
+          <div class="hero-meta">
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              3 horas de trabajo
+            </div>
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              3 decisiones técnicas
+            </div>
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              ISO 27033 · NIST SSDF
+            </div>
+          </div>
+        </div>
+        <div class="hero-illustration" aria-hidden="true">
+          <svg viewBox="0 0 300 300" fill="none">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#a3e635"/></linearGradient>
+              <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient>
+            </defs>
+            <rect x="40" y="40" width="80" height="60" rx="8" stroke="#10b981" stroke-width="1.5" fill="rgba(16,185,129,.08)"/>
+            <rect x="180" y="40" width="80" height="60" rx="8" stroke="#8b5cf6" stroke-width="1.5" fill="rgba(139,92,246,.08)"/>
+            <rect x="110" y="200" width="80" height="60" rx="8" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,.08)"/>
+            <path class="line-flow" d="M120 70 L180 70" stroke="url(#g1)" stroke-width="2"/>
+            <path class="line-flow" d="M150 100 L150 200" stroke="url(#g2)" stroke-width="2" style="animation-delay:.5s"/>
+            <path class="line-flow" d="M220 100 L190 200" stroke="url(#g1)" stroke-width="2" style="animation-delay:1s"/>
+            <circle class="node-pulse" cx="80" cy="70" r="4" fill="#10b981"/>
+            <circle class="node-pulse" cx="220" cy="70" r="4" fill="#8b5cf6" style="animation-delay:.5s"/>
+            <circle class="node-pulse" cx="150" cy="230" r="4" fill="#3b82f6" style="animation-delay:1s"/>
+          </svg>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>1</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="1">
+          Comenzar clase
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 1: REPASO -->
+    <div class="card-stage" id="c1">
+      <div class="sec-eyebrow">Paso 01 · Repaso</div>
+      <h2 class="sec-title">Lo que ya tienen y lo que falta decidir</h2>
+      <p class="sec-desc">En la Clase 1 definieron el alcance: qué problema resuelve su herramienta, qué tipo es y qué NO hará. Hoy toca decidir <strong>con qué</strong> la van a construir.</p>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Regla de esta clase</h3>
+        <p>Cada decisión técnica debe justificarse con <strong>razones concretas</strong>, no con "porque es popular" o "porque el profe lo dijo". Si no puedes explicar por qué elegiste ese lenguaje o ese agente de IA, la decisión no cuenta.</p>
+      </div>
+
+      <div class="card-grid">
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <h4>Decisión 1: Lenguaje</h4>
+          <p>¿Python, Go, Rust, C/C++? Depende de qué necesita tu herramienta: velocidad, portabilidad, ecosistema o seguridad de memoria.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h4>Decisión 2: Agente de IA</h4>
+          <p>¿Antigravity, Ollama, OpenCode? Es el entorno con el que la IA te ayudará a programar. Cada uno tiene ventajas y limitaciones.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h20v14H2zM8 21h8M12 17v4"/></svg>
+          </div>
+          <h4>Decisión 3: Infraestructura</h4>
+          <p>¿Qué componentes tendrá tu herramienta y cómo se conectan? Módulos, almacenamiento, dependencias externas.</p>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>2</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="2">
+          Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 2: LENGUAJE -->
+    <div class="card-stage" id="c2">
+      <div class="sec-eyebrow">Paso 02 · Lenguaje de programación</div>
+      <h2 class="sec-title">Elige el lenguaje según lo que tu herramienta necesita</h2>
+      <p class="sec-desc">No hay un "mejor lenguaje". Hay lenguajes que encajan mejor con ciertos tipos de herramientas de seguridad.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Lenguaje</th><th>Fortalezas en seguridad de redes</th><th>Consideraciones</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Python</strong></td>
+              <td>Prototipado rápido, librerías de red (Scapy, Impacket), análisis de datos, automatización. Domina el tooling open-source ofensivo y defensivo [citation:13].</td>
+              <td>Rendimiento limitado para análisis de tráfico en tiempo real a alta velocidad.</td>
+            </tr>
+            <tr>
+              <td><strong>Go</strong></td>
+              <td>Rendimiento, concurrencia nativa, binarios estáticos. Popular para herramientas de red modernas y C2 frameworks [citation:13].</td>
+              <td>Ecosistema de librerías de red menos maduro que Python.</td>
+            </tr>
+            <tr>
+              <td><strong>Rust</strong></td>
+              <td>Seguridad de memoria garantizada por el compilador. Ideal para parsers críticos y componentes expuestos a entradas hostiles .</td>
+              <td>Curva de aprendizaje pronunciada (6–12 meses para productividad) .</td>
+            </tr>
+            <tr>
+              <td><strong>C / C++</strong></td>
+              <td>Control de bajo nivel, análisis de memoria, reverse engineering, exploit development. Base de la mayoría de vulnerabilidades documentadas [citation:13].</td>
+              <td>Alto riesgo de bugs de memoria si no se domina el lenguaje.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Pregunta guía</strong>
+          ¿Tu herramienta necesita velocidad (Go, Rust), prototipado rápido (Python) o acceso a bajo nivel (C/C++)? ¿El equipo ya domina algún lenguaje? La respuesta honesta a estas dos preguntas vale más que cualquier comparativa.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>3</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="3">
+          Continuar al formulario
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 3: FORM LENGUAJE -->
+    <div class="card-stage" id="c3">
+      <div class="sec-eyebrow">Paso 03 · Decisión de lenguaje</div>
+      <h2 class="sec-title">Registra tu elección de lenguaje</h2>
+      <p class="sec-desc">Esta decisión irá al informe de la Clase 2. Justifica técnicamente por qué eligieron ese lenguaje.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">FORM · 01</span>
+          <h4>Lenguaje de programación</h4>
+        </div>
+        <p class="form-card-desc">Completa los campos con tu equipo.</p>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Lenguaje principal <span class="req">*</span></label>
+            <select id="lenguajePrincipal">
+              <option value="">-- Selecciona --</option>
+              <option>Python</option>
+              <option>Go</option>
+              <option>Rust</option>
+              <option>C</option>
+              <option>C++</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Lenguaje secundario (opcional)</label>
+            <input type="text" id="lenguajeSecundario" placeholder="Ej. Bash para scripts, JS para interfaz">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Justificación técnica (2–3 razones) <span class="req">*</span></label>
+            <textarea id="justificacionLenguaje" placeholder="Ej.: 1. El equipo ya domina Python. 2. Scapy permite capturar y analizar paquetes rápidamente. 3. El prototipo no requiere rendimiento de tiempo real."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Librerías clave que usarán</label>
+            <textarea id="libreriasLenguaje" placeholder="Ej. Scapy, pandas, Flask, requests..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Riesgos o limitaciones identificadas</label>
+            <textarea id="riesgosLenguaje" placeholder="Ej. Rendimiento limitado si el tráfico supera X pps. El equipo no tiene experiencia previa con este lenguaje."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>4</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="4">
+          Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 4: AGENTE IA -->
+    <div class="card-stage" id="c4">
+      <div class="sec-eyebrow">Paso 04 · Agente de IA para el desarrollo</div>
+      <h2 class="sec-title">¿Con qué entorno de IA van a programar?</h2>
+      <p class="sec-desc">No es "usar IA dentro de la herramienta". Es <strong>el agente que les ayudará a escribir el código</strong>. Cada opción tiene un costo, un nivel de privacidad y una curva de aprendizaje distinta.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Agente</th><th>Qué ofrece</th><th>Cuándo conviene</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Antigravity</strong><br><span style="font-size:.76rem;color:var(--text-2);">Google</span></td>
+              <td>Agentes autónomos basados en Gemini que pueden ejecutar comandos, inspeccionar código local y controlar el navegador. Integración con Google AI Ultra y Gemini Enterprise [citation:1].</td>
+              <td>Equipos con acceso a Google AI Ultra o cuenta institucional. Requiere conexión a la nube.</td>
+            </tr>
+            <tr>
+              <td><strong>Ollama</strong><br><span style="font-size:.76rem;color:var(--text-2);">Local</span></td>
+              <td>Ejecuta modelos de lenguaje en tu propia máquina. Sin suscripciones, sin enviar código a la nube. Compatible con VS Code, Claude Code, OpenCode [citation:3][citation:8].</td>
+              <td>Equipos con hardware suficiente (GPU con VRAM) que priorizan privacidad y costo cero por token.</td>
+            </tr>
+            <tr>
+              <td><strong>OpenCode</strong><br><span style="font-size:.76rem;color:var(--text-2);">Open source</span></td>
+              <td>Agente de código open-source multi-proveedor. Funciona en terminal, IDE o desktop. Soporta modelos de Anthropic, OpenAI, Gemini, locales y self-hosted [citation:2].</td>
+              <td>Equipos que quieren flexibilidad de proveedor y control sobre el agente.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>No todos necesitan IA</strong>
+          Si el equipo prefiere programar sin asistencia de IA, también es una decisión válida. En ese caso, declárenlo en el formulario con una justificación. Lo que no se vale es improvisar.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>5</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="5">
+          Continuar al formulario
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 5: FORM AGENTE -->
+    <div class="card-stage" id="c5">
+      <div class="sec-eyebrow">Paso 05 · Decisión de agente de IA</div>
+      <h2 class="sec-title">Registra tu elección de agente</h2>
+      <p class="sec-desc">Si van a usar IA para programar, aquí queda la decisión. Si no, declárenlo con justificación.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">FORM · 02</span>
+          <h4>Agente de IA para el desarrollo</h4>
+        </div>
+        <p class="form-card-desc">Completa los campos con tu equipo.</p>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>¿Usarán agente de IA? <span class="req">*</span></label>
+            <select id="usaIA">
+              <option value="">-- Selecciona --</option>
+              <option value="si">Sí, vamos a usar un agente</option>
+              <option value="no">No, programaremos sin IA</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Agente elegido (si aplica)</label>
+            <select id="agenteElegido">
+              <option value="">-- Selecciona --</option>
+              <option>Antigravity</option>
+              <option>Ollama</option>
+              <option>OpenCode</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Justificación de la decisión <span class="req">*</span></label>
+            <textarea id="justificacionAgente" placeholder="Ej.: Elegimos Ollama porque el equipo tiene GPU local, priorizamos privacidad del código y no queremos pagar suscripción mensual."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>¿Requiere conexión a internet?</label>
+            <select id="requiereInternet">
+              <option value="">-- Selecciona --</option>
+              <option>Sí</option>
+              <option>No, es local</option>
+              <option>Depende del modelo</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Modelo(s) que usarán (si aplica)</label>
+            <input type="text" id="modeloIA" placeholder="Ej. Gemma, Qwen, Claude...">
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>6</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="6">
+          Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 6: INFRAESTRUCTURA -->
+    <div class="card-stage" id="c6">
+      <div class="sec-eyebrow">Paso 06 · Arquitectura de infraestructura</div>
+      <h2 class="sec-title">¿Qué componentes tendrá tu herramienta?</h2>
+      <p class="sec-desc">La arquitectura describe los bloques que componen tu herramienta y cómo se conectan. No necesitas un diagrama visual: una tabla clara con componentes y dependencias es suficiente.</p>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Preguntas para guiar el diseño</h3>
+        <ul>
+          <li>¿Tu herramienta tiene una interfaz de usuario (CLI, web, escritorio)?</li>
+          <li>¿Necesita almacenar datos (logs, capturas, configuraciones)? ¿Dónde?</li>
+          <li>¿Se comunica con servicios externos (APIs, bases de datos, otros equipos)?</li>
+          <li>¿Qué componente es el núcleo y cuáles son satélites?</li>
+        </ul>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Ejemplo simple</strong>
+          Componente "Captura de tráfico" (función: leer paquetes de la interfaz) → depende de → Componente "Analizador" (función: detectar patrones) → depende de → Componente "Almacenamiento" (función: guardar logs). Cada flecha es una dependencia.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>7</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="7">
+          Continuar al formulario
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 7: FORM COMPONENTES -->
+    <div class="card-stage" id="c7">
+      <div class="sec-eyebrow">Paso 07 · Componentes de infraestructura</div>
+      <h2 class="sec-title">Registra los componentes de tu herramienta</h2>
+      <p class="sec-desc">Agrega al menos 4 componentes. Cada uno con su función, tecnología y de qué otro componente depende.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">FORM · 03</span>
+          <h4>Componentes de infraestructura</h4>
+        </div>
+        <p class="form-card-desc">Mínimo 4 componentes. Si un componente no depende de otro, deja "Ninguno".</p>
+
+        <div class="edit-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th style="width:22%;">Componente <span style="color:var(--red);">*</span></th>
+                <th style="width:28%;">Función <span style="color:var(--red);">*</span></th>
+                <th style="width:20%;">Tecnología</th>
+                <th>Depende de</th>
+                <th style="width:70px;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoComponentes">
+              <tr><td colspan="6"><div class="empty-msg">Aún no has agregado componentes.</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnAgregarComponente" style="margin-top:8px;">+ Agregar componente</button>
+
+        <div class="form-row" style="margin-top:16px;">
+          <div class="form-field full">
+            <label>Flujo principal de datos (describe el recorrido)</label>
+            <textarea id="flujoPrincipal" placeholder="Ej.: El tráfico entra por el componente de captura → se envía al analizador → si hay coincidencia, se registra en almacenamiento y se notifica al panel de alertas."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>8</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="8">
+          Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 8: COHERENCIA -->
+    <div class="card-stage" id="c8">
+      <div class="sec-eyebrow">Paso 08 · Verificación de coherencia</div>
+      <h2 class="sec-title">¿Todo encaja con el alcance de la Clase 1?</h2>
+      <p class="sec-desc">Antes de cerrar la Clase 2, revisa que las decisiones técnicas tengan sentido con lo que definieron en la Clase 1.</p>
+
+      <div class="quiz" id="quizCoherencia">
+        <div class="quiz-header"><span class="quiz-badge">CHECKLIST · 01</span></div>
+        <div class="quiz-q">Si su herramienta es un IDS que analiza tráfico en tiempo real de una LAN universitaria, ¿cuál de estas combinaciones es más coherente?</div>
+        <div class="quiz-options">
+          <button class="quiz-option" data-correct="false">
+            <span class="radio"></span>
+            Python + Antigravity (nube) + almacenamiento en archivos planos locales.
+          </button>
+          <button class="quiz-option" data-correct="true">
+            <span class="radio"></span>
+            Go o Python + Ollama (local) + base de datos para logs + componente de captura y analizador separados.
+          </button>
+          <button class="quiz-option" data-correct="false">
+            <span class="radio"></span>
+            Rust + OpenCode + un solo componente monolítico sin almacenamiento.
+          </button>
+        </div>
+        <div class="quiz-feedback" id="fbCoherencia"></div>
+        <div class="quiz-actions">
+          <button class="btn btn-primary btn-sm" id="checkCoherencia">Validar</button>
+          <button class="btn btn-ghost btn-sm" id="resetCoherencia">Reintentar</button>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Preguntas de coherencia</strong>
+          ¿El lenguaje elegido soporta las librerías que necesitan? ¿El agente de IA es compatible con el lenguaje y el entorno del equipo? ¿Los componentes cubren el alcance de la Clase 1? Si alguna respuesta es "no", ajusten antes de descargar.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>9</strong> de <strong>10</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="9">
+          Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 9: EVIDENCIA Y DESCARGA -->
+    <div class="card-stage" id="c9">
+      <div class="sec-eyebrow">Paso 09 · Evidencia y descarga</div>
+      <h2 class="sec-title">Sustenta tu decisión y descarga el informe</h2>
+      <p class="sec-desc">Sube la evidencia de tu equipo (captura del agente de IA configurado, repositorio con el lenguaje elegido, boceto del diagrama) y descarga el informe de la Clase 2.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">EVIDENCIA</span>
+          <h4>Sustentación del equipo</h4>
+        </div>
+        <p class="form-card-desc">Sube aquí los archivos que demuestren las decisiones tomadas. Formatos: PDF, PNG, JPG, ZIP. Máximo 20 MB por archivo.</p>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Archivos de evidencia</label>
+            <input type="file" id="evidenciaFiles" multiple accept=".pdf,.png,.jpg,.jpeg,.zip" style="padding:12px;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Observaciones o comentarios de sustentación</label>
+            <textarea id="observacionesEvidencia" placeholder="Ej.: Adjuntamos captura de Ollama corriendo con el modelo Gemma 4, el repositorio inicial con Go configurado y un boceto del diagrama de componentes."></textarea>
+          </div>
+        </div>
+
+        <div class="msg" id="mensajeEvidencia"></div>
+      </div>
+
+      <div class="progress-block">
+        <div class="head">
+          <h4>Estado del informe de Clase 2</h4>
+          <span class="val" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-sub" id="progressSub">0 de 3 decisiones completadas</div>
+      </div>
+
+      <div class="complete-banner">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Informe de decisiones técnicas listo para exportar</h3>
+        <p>El documento incluye: datos del equipo, lenguaje elegido y justificación, agente de IA (o declaración de no uso), componentes de infraestructura y flujo principal.</p>
+        <button class="btn btn-primary" id="btnDescargar" style="font-size:.95rem;padding:14px 30px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Descargar informe Clase 2 (.html)
+        </button>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Anexar al informe maestro</strong>
+          Este informe es independiente. Guárdenlo junto al de la Clase 1. Al final de la Clase 6 tendrán un documento integrado con todas las decisiones del proyecto.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>10</strong> de <strong>10</strong></span>
+        <button class="btn btn-secondary" data-next="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Volver al inicio
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  SecNet Academy · OVA Clase 02 · Del alcance al stack técnico · 2025
+</footer>
+
+<script>
+/* ============ ESTADO ============ */
+const estado = { componentes: [] };
+let cardActual = 0;
+
+function esc(s){
+  if(s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============ TEMA ============ */
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const sunPath = '<circle cx="12" cy="12" r="4" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke-width="2" stroke-linecap="round"/>';
+const moonPath = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  themeIcon.innerHTML = theme === 'dark' ? sunPath : moonPath;
+  localStorage.setItem('ova-theme', theme);
+}
+(function initTheme(){
+  const saved = localStorage.getItem('ova-theme');
+  if(saved){ applyTheme(saved); return; }
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? 'dark' : 'light');
+})();
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+/* ============ NAVEGACIÓN ============ */
+const cards = document.querySelectorAll('.card-stage');
+const navItems = document.querySelectorAll('.nav-item');
+const visited = new Set(['0']);
+
+function gotoCard(id){
+  cards.forEach(c => c.classList.toggle('active', c.id === 'c' + id));
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.section === String(id)));
+  visited.add(String(id));
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(window.innerWidth <= 1000){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('backdrop').classList.remove('open');
+  }
+  updateNavChecks();
+  updateProgress();
+}
+
+document.querySelectorAll('[data-next]').forEach(btn => {
+  btn.addEventListener('click', () => gotoCard(parseInt(btn.dataset.next)));
+});
+navItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    gotoCard(parseInt(item.dataset.section));
+  });
+});
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('backdrop').classList.toggle('open');
+});
+document.getElementById('backdrop').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+});
+
+function updateNavChecks(){
+  navItems.forEach(n => {
+    n.classList.toggle('done', visited.has(n.dataset.section) && n.dataset.section !== '0');
+  });
+}
+
+/* ============ COMPONENTES ============ */
+const cuerpoComponentes = document.getElementById('cuerpoComponentes');
+const btnAgregarComponente = document.getElementById('btnAgregarComponente');
+
+function renderComponentes(){
+  if(estado.componentes.length === 0){
+    cuerpoComponentes.innerHTML = '<tr><td colspan="6"><div class="empty-msg">Aún no has agregado componentes.</div></td></tr>';
+  } else {
+    cuerpoComponentes.innerHTML = estado.componentes.map((c, i) => `
+      <tr>
+        <td style="text-align:center;color:var(--text-3);font-family:var(--mono);">${String(i+1).padStart(2,'0')}</td>
+        <td><input data-comp="${i}" data-campo="nombre" value="${esc(c.nombre)}" placeholder="Ej. Captura de tráfico"></td>
+        <td><textarea data-comp="${i}" data-campo="funcion" placeholder="¿Qué hace este componente?">${esc(c.funcion)}</textarea></td>
+        <td><input data-comp="${i}" data-campo="tecnologia" value="${esc(c.tecnologia)}" placeholder="Ej. Scapy + Python"></td>
+        <td><input data-comp="${i}" data-campo="depende" value="${esc(c.depende)}" placeholder="Ej. Analizador"></td>
+        <td style="text-align:center;"><button class="btn-remove" data-index="${i}">Quitar</button></td>
+      </tr>
+    `).join('');
+    cuerpoComponentes.querySelectorAll('[data-comp]').forEach(el => {
+      el.addEventListener('input', function(){
+        estado.componentes[parseInt(this.getAttribute('data-comp'))][this.getAttribute('data-campo')] = this.value;
+        updateProgress();
+      });
+    });
+    cuerpoComponentes.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', function(){
+        estado.componentes.splice(parseInt(this.getAttribute('data-index')), 1);
+        renderComponentes(); updateProgress();
+      });
+    });
+  }
+  updateProgress();
+}
+
+btnAgregarComponente.addEventListener('click', () => {
+  if(estado.componentes.length >= 10){ alert('Máximo 10 componentes para esta sesión.'); return; }
+  estado.componentes.push({nombre:'', funcion:'', tecnologia:'', depende:''});
+  renderComponentes(); updateProgress();
+});
+
+/* ============ PROGRESO ============ */
+function updateProgress(){
+  const checks = [
+    () => document.getElementById('lenguajePrincipal').value !== '',
+    () => document.getElementById('justificacionLenguaje').value.trim() !== '',
+    () => document.getElementById('usaIA').value !== '',
+    () => document.getElementById('justificacionAgente').value.trim() !== '',
+    () => estado.componentes.length >= 4 && estado.componentes.every(c => c.nombre.trim() && c.funcion.trim()),
+    () => document.getElementById('flujoPrincipal').value.trim() !== ''
+  ];
+  const ok = checks.filter(fn => { try { return fn(); } catch(e){ return false; } }).length;
+  const pct = Math.round((ok/checks.length)*100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressSub').textContent = ok + ' de ' + checks.length + ' campos completados';
+  document.getElementById('topbarFill').style.width = pct + '%';
+  document.getElementById('topbarPct').textContent = pct + '%';
+}
+document.querySelectorAll('input, textarea, select').forEach(el => {
+  el.addEventListener('input', updateProgress);
+  el.addEventListener('change', updateProgress);
+});
+
+/* ============ GENERAR INFORME ============ */
+function generarInformeHTML(){
+  const lenguaje = document.getElementById('lenguajePrincipal').value;
+  const lenguajeSec = document.getElementById('lenguajeSecundario').value.trim();
+  const justLenguaje = document.getElementById('justificacionLenguaje').value.trim();
+  const librerias = document.getElementById('libreriasLenguaje').value.trim();
+  const riesgos = document.getElementById('riesgosLenguaje').value.trim();
+  const usaIA = document.getElementById('usaIA').value;
+  const agente = document.getElementById('agenteElegido').value;
+  const justAgente = document.getElementById('justificacionAgente').value.trim();
+  const internet = document.getElementById('requiereInternet').value;
+  const modelo = document.getElementById('modeloIA').value.trim();
+  const flujo = document.getElementById('flujoPrincipal').value.trim();
+  const obs = document.getElementById('observacionesEvidencia').value.trim();
+  const fecha = new Date().toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
+
+  const fComp = estado.componentes.length > 0
+    ? estado.componentes.map((c,i)=>`<tr><td style="text-align:center;">${i+1}</td><td><strong>${esc(c.nombre)}</strong></td><td>${esc(c.funcion)}</td><td>${esc(c.tecnologia)}</td><td>${esc(c.depende || 'Ninguno')}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#64748b;">Sin componentes</td></tr>';
+
+  const agenteFinal = usaIA === 'si' ? (agente || 'No especificado') : 'No se usará agente de IA';
+  const internetFinal = usaIA === 'si' ? (internet || 'No especificado') : 'No aplica';
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Informe Clase 2 – Decisiones Técnicas</title>
+<style>
+  body{font-family:'Plus Jakarta Sans','Segoe UI',Arial,sans-serif;color:#1e293b;line-height:1.65;max-width:960px;margin:30px auto;padding:0 32px;background:#f8fafc;}
+  h1{color:#0f172a;border-bottom:3px solid #10b981;padding-bottom:12px;font-size:1.5rem;}
+  h2{color:#059669;margin-top:38px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;font-size:1.15rem;}
+  h3{color:#0f172a;margin-top:24px;font-size:1rem;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9rem;}
+  th,td{border:1px solid #e2e8f0;padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:#0f172a;color:#fff;font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.5px;}
+  .portada{background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:8px;padding:22px 26px;margin:24px 0;}
+  .portada p{margin:6px 0;}
+  .portada strong{color:#0f172a;}
+  .nota{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;font-size:.9rem;margin:18px 0;}
+  .bloque{margin:14px 0;padding:12px 16px;background:#f1f5f9;border-radius:6px;border-left:3px solid #10b981;}
+  .bloque strong{color:#0f172a;}
+</style></head>
+<body>
+
+<h1>Informe Clase 2 – Decisiones Técnicas</h1>
+
+<div class="portada">
+  <p><strong>OVA:</strong> Herramienta de Seguridad en Redes desde Cero – Clase 2</p>
+  <p><strong>Fecha:</strong> ${fecha}</p>
+  <p><strong>Clase:</strong> 2 de 5</p>
+  <p><strong>Nota:</strong> Este informe se anexa al de la Clase 1. No lo reemplaza.</p>
+</div>
+
+<div class="nota"><strong>Regla:</strong> cada decisión técnica debe estar justificada. Si no puedes explicar por qué elegiste algo, la decisión no cuenta.</div>
+
+<h2>1. Decisión de lenguaje de programación</h2>
+<div class="bloque">
+  <p><strong>Lenguaje principal:</strong> ${esc(lenguaje)}</p>
+  ${lenguajeSec ? `<p><strong>Lenguaje secundario:</strong> ${esc(lenguajeSec)}</p>` : ''}
+  <p><strong>Justificación técnica:</strong><br>${esc(justLenguaje).replace(/\n/g,'<br>')}</p>
+  ${librerias ? `<p><strong>Librerías clave:</strong><br>${esc(librerias).replace(/\n/g,'<br>')}</p>` : ''}
+  ${riesgos ? `<p><strong>Riesgos identificados:</strong><br>${esc(riesgos).replace(/\n/g,'<br>')}</p>` : ''}
+</div>
+
+<h2>2. Decisión de agente de IA para el desarrollo</h2>
+<div class="bloque">
+  <p><strong>¿Usarán agente de IA?:</strong> ${usaIA === 'si' ? 'Sí' : 'No'}</p>
+  <p><strong>Agente elegido:</strong> ${esc(agenteFinal)}</p>
+  <p><strong>Justificación:</strong><br>${esc(justAgente).replace(/\n/g,'<br>')}</p>
+  <p><strong>¿Requiere conexión a internet?:</strong> ${esc(internetFinal)}</p>
+  ${modelo ? `<p><strong>Modelo(s):</strong> ${esc(modelo)}</p>` : ''}
+</div>
+
+<h2>3. Componentes de infraestructura</h2>
+<table>
+  <thead><tr><th style="width:40px;">#</th><th>Componente</th><th>Función</th><th>Tecnología</th><th>Depende de</th></tr></thead>
+  <tbody>${fComp}</tbody>
+</table>
+
+${flujo ? `<h2>4. Flujo principal de datos</h2><div class="bloque"><p>${esc(flujo).replace(/\n/g,'<br>')}</p></div>` : ''}
+
+${obs ? `<h2>5. Observaciones de sustentación</h2><div class="bloque"><p>${esc(obs).replace(/\n/g,'<br>')}</p></div>` : ''}
+
+<h2>6. Declaración de cierre</h2>
+<p>El equipo declara que las decisiones técnicas aquí registradas fueron discutidas y justificadas, y que son coherentes con el alcance definido en la Clase 1.</p>
+
+</body></html>`;
+}
+
+/* ============ DESCARGAR ============ */
+document.getElementById('btnDescargar').addEventListener('click', () => {
+  const falt = [];
+  if(!document.getElementById('lenguajePrincipal').value) falt.push('Lenguaje principal');
+  if(!document.getElementById('justificacionLenguaje').value.trim()) falt.push('Justificación del lenguaje');
+  if(!document.getElementById('usaIA').value) falt.push('Decisión sobre agente de IA');
+  if(!document.getElementById('justificacionAgente').value.trim()) falt.push('Justificación del agente');
+  if(estado.componentes.length < 4) falt.push('Mínimo 4 componentes de infraestructura (tienes ' + estado.componentes.length + ')');
+  else if(!estado.componentes.every(c => c.nombre.trim() && c.funcion.trim())) falt.push('Nombre y función de todos los componentes');
+  if(!document.getElementById('flujoPrincipal').value.trim()) falt.push('Flujo principal de datos');
+
+  if(falt.length > 0){
+    alert('⚠ Faltan campos obligatorios:\n\n• ' + falt.join('\n• ') + '\n\nComplétalos antes de descargar.');
+    return;
+  }
+
+  const blob = new Blob([generarInformeHTML()], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Informe_Clase2_Decisiones_Tecnicas.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* ============ QUIZ ============ */
+function setupQuiz(quizId, feedbackId, checkId, resetId){
+  const quiz = document.getElementById(quizId);
+  const fb = document.getElementById(feedbackId);
+  const check = document.getElementById(checkId);
+  const reset = document.getElementById(resetId);
+  let selected = null, answered = false;
+
+  quiz.querySelectorAll('.quiz-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      if(answered) return;
+      quiz.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      selected = opt;
+    });
+  });
+
+  check.addEventListener('click', () => {
+    if(answered) return;
+    if(!selected){ fb.textContent='Selecciona una opción antes de validar.'; fb.className='quiz-feedback show err'; return; }
+    answered = true;
+    const correct = selected.dataset.correct === 'true';
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      o.classList.add('disabled');
+      if(o.dataset.correct === 'true') o.classList.add('correct');
+    });
+    if(!correct) selected.classList.add('wrong');
+    if(correct){
+      fb.innerHTML = '<strong>✓ Correcto.</strong> Para un IDS en tiempo real, Go o Python son más adecuados que Rust (curva de aprendizaje alta) o un monolito sin almacenamiento. Ollama local evita depender de la nube y protege el código. La separación de componentes captura + analizador + almacenamiento es coherente con el alcance.';
+      fb.className='quiz-feedback show ok';
+    } else {
+      fb.innerHTML = '<strong>✗ Revisa.</strong> La opción correcta es la segunda. Un monolito sin almacenamiento no cubre el alcance de un IDS, y Antigravity en nube puede no ser viable si el equipo no tiene acceso a Google AI Ultra. La combinación de Go/Python + Ollama local + componentes separados es más realista y coherente.';
+      fb.className='quiz-feedback show err';
+    }
+  });
+
+  reset.addEventListener('click', () => {
+    selected = null; answered = false;
+    quiz.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected','correct','wrong','disabled'));
+    fb.className='quiz-feedback'; fb.textContent='';
+  });
+}
+setupQuiz('quizCoherencia','fbCoherencia','checkCoherencia','resetCoherencia');
+
+/* ============ EVIDENCIA ============ */
+document.getElementById('evidenciaFiles').addEventListener('change', function(){
+  const msg = document.getElementById('mensajeEvidencia');
+  if(this.files.length > 0){
+    msg.textContent = '✓ ' + this.files.length + ' archivo(s) seleccionado(s). Recuerda subirlos también a la plataforma institucional.';
+    msg.className = 'msg show ok';
+  } else {
+    msg.className = 'msg';
+  }
+});
+
+/* ============ INIT ============ */
+renderComponentes();
+updateProgress();
+updateNavChecks();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Informe Clase 2 – Decisiones Técnicas</title>
+<style>
+  body{font-family:'Plus Jakarta Sans','Segoe UI',Arial,sans-serif;color:#1e293b;line-height:1.65;max-width:960px;margin:30px auto;padding:0 32px;background:#f8fafc;}
+  h1{color:#0f172a;border-bottom:3px solid #10b981;padding-bottom:12px;font-size:1.5rem;}
+  h2{color:#059669;margin-top:38px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;font-size:1.15rem;}
+  h3{color:#0f172a;margin-top:24px;font-size:1rem;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9rem;}
+  th,td{border:1px solid #e2e8f0;padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:#0f172a;color:#fff;font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.5px;}
+  .portada{background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:8px;padding:22px 26px;margin:24px 0;}
+  .portada p{margin:6px 0;}
+  .portada strong{color:#0f172a;}
+  .nota{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;font-size:.9rem;margin:18px 0;}
+  .bloque{margin:14px 0;padding:12px 16px;background:#f1f5f9;border-radius:6px;border-left:3px solid #10b981;}
+  .bloque strong{color:#0f172a;}
+</style></head>
+<body>
+
+<h1>Informe Clase 2 – Decisiones Técnicas</h1>
+
+<div class="portada">
+  <p><strong>OVA:</strong> Herramienta de Seguridad en Redes desde Cero – Clase 2</p>
+  <p><strong>Fecha:</strong> 27 de octubre de 2026</p>
+  <p><strong>Clase:</strong> 2 de 5</p>
+  <p><strong>Nota:</strong> Este informe se anexa al de la Clase 1. No lo reemplaza.</p>
+</div>
+
+<div class="nota"><strong>Regla:</strong> cada decisión técnica debe estar justificada. Si no puedes explicar por qué elegiste algo, la decisión no cuenta.</div>
+
+<h2>1. Decisión de lenguaje de programación</h2>
+<div class="bloque">
+  <p><strong>Lenguaje principal:</strong> Python</p>
+  <p><strong>Lenguaje secundario:</strong> PHP (Laravel API), TypeScript/JS (dashboard React), Bash</p>
+  <p><strong>Justificación técnica:</strong><br>1) Scapy/Nmap/Suricata y tooling de red. <br>2) Prototipado rápido del scanner/IDS. <br>3) El tiempo real pesado lo asume Suricata, no Python puro.<br>4) API Laravel por rapido despliegue y curva de aprendizaje corta.<br>5) Front con React por rapidez y robustez.</p>
+  <p><strong>Librerías clave:</strong><br>Sensores (Python): Scapy, requests/httpx, Pydantic, Nmap, arp-scan.<br>IDS: Suricata (eve.json) + lector Python.<br>API: Laravel 13, PHP 8.3+, Sanctum, Reverb, MariaDB.<br>Dashboard: Vite, React, TypeScript, Cytoscape.<br>Ops: Bash / Makefile, systemd.</p>
+  <p><strong>Riesgos identificados:</strong><br>1. Python no es adecuado para análisis de tráfico a alto pps; el cuello de botella sigue siendo Suricata/config.<br>2. Stack híbrido (Python + PHP + TypeScript) exige contratos compartidos (contracts/) para no divergir formatos de ingest (ASVS V2.2.1).<br>3. Capacidades de captura solo en procesos sensor; otorgarlas a la API elevaría privilegios (SSDF PW.1.1).</p>
+</div>
+
+<h2>2. Decisión de agente de IA para el desarrollo</h2>
+<div class="bloque">
+  <p><strong>¿Usarán agente de IA?:</strong> Sí</p>
+  <p><strong>Agente elegido:</strong> Otro</p>
+  <p><strong>Justificación:</strong><br>1. El monorepo Argos se desarrollara usando Cursor: el agente conocera la estructura api/, dashboard/, docs/ y el plan de implementación sin cambiar de herramienta.<br>2. Permite asistencia multi-stack (Laravel, React/TS y Python) en el mismo flujo de trabajo del equipo.<br>3. El equipo mantiene control humano: el agente sugiere; arquitectura, citas normativas y alcance legal las validan el líder técnico y el responsable de seguridad.<br>4. No se eligió Ollama en esta fase porque el hardware/VRAM no es el requisito prioritario frente a velocidad de implementación del MVP; la privacidad se mitiga no pegando secretos (.env, tokens) en el chat.<br>5. Los agentes que el equipo de desarrollo y analisis usan son: Cursor, Claude Code, ChatGPT</p>
+  <p><strong>¿Requiere conexión a internet?:</strong> Sí</p>
+  <p><strong>Modelo(s):</strong> Modelos del agente se toma automaticamente.</p>
+</div>
+
+<h2>3. Componentes de infraestructura</h2>
+<table>
+  <thead><tr><th style="width:40px;">#</th><th>Componente</th><th>Función</th><th>Tecnología</th><th>Depende de</th></tr></thead>
+  <tbody><tr><td style="text-align:center;">1</td><td><strong>Scanner</strong></td><td>Descubrir hosts (CIDR local), deep scan periódico/bajo demanda, comparar línea base y enviar dispositivos/eventos</td><td>Python + Nmap / arp-scan</td><td>API (ingest)</td></tr><tr><td style="text-align:center;">2</td><td><strong>IDS</strong></td><td>Detectar tráfico/comportamiento sospechoso, normalizar alertas y enviarlas</td><td>Suricata + Python (lector eve.json)</td><td>API (ingest)</td></tr><tr><td style="text-align:center;">3</td><td><strong>API</strong></td><td>Único escritor en DB: validar ingest, auth (Sanctum + token sensor), persistir, broadcast y notificar</td><td>Laravel 13 / PHP 8.3+ · Reverb</td><td>MariaDB</td></tr><tr><td style="text-align:center;">4</td><td><strong>MariaDB</strong></td><td>Almacenar inventario, servicios, eventos y alertas (retención 30 días)</td><td>MariaDB</td><td>Ninguno</td></tr><tr><td style="text-align:center;">5</td><td><strong>Dashboard</strong></td><td>UI/UX: Resumen, Mapa, Exposición, Actividad</td><td>Vite + React + TypeScript</td><td>API / Reverb</td></tr><tr><td style="text-align:center;">6</td><td><strong>Telegram Bot</strong></td><td>Notificar solo alertas high/critical con anti-ruido 15 min</td><td>Bot API vía Laravel Notification</td><td>API</td></tr></tbody>
+</table>
+
+<h2>4. Flujo principal de datos</h2><div class="bloque"><p>La LAN propia es observada por Scanner (descubrimiento/deep scan) e IDS (Suricata). Ambos sensores envían resultados por HTTP a la API con token de sensor (no escriben en la base de datos). La API Laravel valida (Form Requests + contracts), persiste en MariaDB, emite eventos por Reverb y, si la severidad es high/critical, notifica a Telegram. El dashboard consulta historial por REST (Sanctum) y recibe novedades por WebSocket (Echo/Reverb); en lab, API/Reverb/dashboard se enlazan a 127.0.0.1</p></div>
+
+<h2>5. Observaciones de sustentación</h2><div class="bloque"><p>Se sustenta con el plan Argos NetSec Plan de implementación, el informe Clase 1 y el monorepo a desarrollar (api/, dashboard/, docs/, ids/, scanner/). Lenguaje principal Python para sensores; API Laravel y dashboard React como lenguajes secundarios. Agente de desarrollo: Cursor, ChatGPT, Claude Code (Otro). Componentes alineados al alcance Clase 1: sin IPS, sin Docker, bind localhost en lab.</p></div>
+
+<h2>6. Declaración de cierre</h2>
+<p>El equipo declara que las decisiones técnicas aquí registradas fueron discutidas y justificadas, y que son coherentes con el alcance definido en la Clase 1.</p>
+
+</body></html>
