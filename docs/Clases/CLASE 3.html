@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OVA · Clase 3 · Codificación segura: teoría, investigación y evidencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --accent:#10b981;--accent-2:#34d399;--accent-3:#a3e635;
+    --accent-glow:rgba(16,185,129,.35);
+    --violet:#8b5cf6;--violet-2:#a78bfa;
+    --blue:#3b82f6;--amber:#f59e0b;--red:#ef4444;
+    --radius-sm:8px;--radius:14px;--radius-lg:20px;--radius-xl:28px;
+    --transition:.35s cubic-bezier(.4,0,.2,1);
+    --font:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  [data-theme="dark"]{
+    --bg:#0a0f1c;--bg-2:#0f1729;--bg-3:#141d33;
+    --surface:#141d33;--surface-2:#1a2540;--surface-3:#1f2c4a;
+    --border:rgba(148,163,184,.12);--border-2:rgba(148,163,184,.2);
+    --text:#e2e8f0;--text-2:#94a3b8;--text-3:#64748b;--text-bright:#f8fafc;
+    --shadow:0 10px 40px -10px rgba(0,0,0,.5);
+    --shadow-sm:0 4px 16px -4px rgba(0,0,0,.4);
+    --glass:rgba(20,29,51,.7);
+  }
+  [data-theme="light"]{
+    --bg:#f8fafc;--bg-2:#ffffff;--bg-3:#f1f5f9;
+    --surface:#ffffff;--surface-2:#f8fafc;--surface-3:#f1f5f9;
+    --border:rgba(15,23,42,.08);--border-2:rgba(15,23,42,.14);
+    --text:#1e293b;--text-2:#64748b;--text-3:#94a3b8;--text-bright:#0f172a;
+    --shadow:0 10px 40px -10px rgba(15,23,42,.12);
+    --shadow-sm:0 4px 16px -4px rgba(15,23,42,.08);
+    --glass:rgba(255,255,255,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:var(--font);background:var(--bg);color:var(--text);
+    line-height:1.65;font-size:15px;
+    transition:background var(--transition),color var(--transition);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    min-height:100vh;display:flex;flex-direction:column;
+  }
+  [data-theme="dark"] body{
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%,rgba(16,185,129,.08),transparent),
+      radial-gradient(ellipse 60% 40% at 90% 10%,rgba(139,92,246,.06),transparent);
+    background-attachment:fixed;
+  }
+
+  /* TOPBAR */
+  .topbar{position:sticky;top:0;z-index:100;background:var(--glass);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--border);}
+  .topbar-inner{max-width:1400px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:18px;}
+  .brand{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+  .brand-logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-3));display:flex;align-items:center;justify-content:center;color:#0a0f1c;font-family:var(--mono);font-weight:800;font-size:17px;box-shadow:0 4px 16px var(--accent-glow);}
+  .brand-text{line-height:1.2;}
+  .brand-text strong{display:block;font-size:.95rem;font-weight:800;color:var(--text-bright);letter-spacing:-.02em;}
+  .brand-text span{font-size:.72rem;color:var(--text-2);font-family:var(--mono);letter-spacing:.3px;}
+  .topbar-divider{width:1px;height:32px;background:var(--border-2);flex-shrink:0;}
+  .class-pill{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:999px;font-size:.78rem;font-weight:600;color:var(--text-2);flex-shrink:0;}
+  .class-pill .dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
+  .topbar-progress{flex:1;max-width:280px;display:flex;align-items:center;gap:10px;}
+  .topbar-progress .label{font-size:.72rem;color:var(--text-3);font-family:var(--mono);white-space:nowrap;}
+  .topbar-progress .track{flex:1;height:6px;background:var(--surface-3);border-radius:999px;overflow:hidden;}
+  .topbar-progress .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-3));width:0%;transition:width .5s cubic-bezier(.4,0,.2,1);border-radius:999px;box-shadow:0 0 10px var(--accent-glow);}
+  .topbar-progress .pct{font-size:.78rem;font-weight:800;color:var(--accent);font-family:var(--mono);min-width:36px;text-align:right;}
+  .topbar-actions{display:flex;gap:8px;margin-left:auto;align-items:center;}
+  .icon-btn{width:38px;height:38px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-2);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+  .icon-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--surface-3);transform:translateY(-1px);}
+  .icon-btn svg{width:18px;height:18px;stroke-width:2;}
+
+  /* DASHBOARD */
+  .dashboard{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:28px 24px 40px;display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start;}
+
+  /* SIDEBAR */
+  .sidebar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 14px;position:sticky;top:90px;max-height:calc(100vh - 110px);overflow-y:auto;box-shadow:var(--shadow-sm);}
+  .sidebar::-webkit-scrollbar{width:5px;}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+  .sidebar-title{font-size:.68rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);font-weight:700;margin:0 0 12px 10px;}
+  .sidebar-section{font-size:.65rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;color:var(--text-3);font-weight:700;margin:14px 0 6px 10px;opacity:.7;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:var(--text-2);text-decoration:none;font-size:.84rem;font-weight:500;transition:all .18s;margin-bottom:2px;cursor:pointer;border:1px solid transparent;}
+  .nav-item:hover{background:var(--surface-2);color:var(--text);}
+  .nav-item.active{background:rgba(16,185,129,.1);color:var(--accent);border-color:rgba(16,185,129,.25);font-weight:700;}
+  .nav-item .num{font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--text-3);min-width:20px;flex-shrink:0;}
+  .nav-item.active .num{color:var(--accent);}
+  .nav-item .check{margin-left:auto;width:15px;height:15px;opacity:0;transition:opacity .2s;color:var(--accent);flex-shrink:0;}
+  .nav-item.done .check{opacity:1;}
+  .nav-item.done .num{color:var(--accent);}
+
+  /* MAIN */
+  .main{min-width:0;display:flex;flex-direction:column;gap:24px;}
+
+  /* CARD STAGE */
+  .card-stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow);padding:40px 44px;position:relative;display:none;animation:cardIn .45s cubic-bezier(.4,0,.2,1);}
+  .card-stage.active{display:block;}
+  .card-stage::before{content:'';position:absolute;top:0;left:44px;right:44px;height:3px;background:linear-gradient(90deg,var(--accent),var(--violet),var(--accent-3));border-radius:0 0 3px 3px;opacity:.9;}
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+  /* TYPO */
+  .sec-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+  .sec-eyebrow::before{content:'';width:20px;height:2px;background:var(--accent);border-radius:2px;}
+  .sec-title{font-size:clamp(1.5rem,3vw,2.1rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;color:var(--text-bright);margin-bottom:12px;}
+  .sec-desc{font-size:.96rem;color:var(--text-2);max-width:720px;line-height:1.7;margin-bottom:8px;}
+  h3{font-size:1.08rem;font-weight:700;color:var(--text-bright);letter-spacing:-.01em;margin:24px 0 12px;display:flex;align-items:center;gap:10px;}
+  h3::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px;}
+  h4{font-size:.95rem;font-weight:700;color:var(--text-bright);margin:18px 0 8px;}
+  p{margin-bottom:12px;color:var(--text);}
+  ul,ol{margin:10px 0 14px 22px;color:var(--text);}
+  li{margin-bottom:7px;line-height:1.65;}
+  li strong{color:var(--text-bright);font-weight:700;}
+
+  /* CARD */
+  .card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px;}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0;}
+  .feature-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .25s;position:relative;overflow:hidden;}
+  .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-3));opacity:0;transition:opacity .25s;}
+  .feature-card:hover{transform:translateY(-3px);border-color:rgba(16,185,129,.3);box-shadow:var(--shadow-sm);}
+  .feature-card:hover::before{opacity:1;}
+  .feature-card .icon-box{width:42px;height:42px;border-radius:11px;background:rgba(16,185,129,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:12px;border:1px solid rgba(16,185,129,.2);}
+  .feature-card .icon-box svg{width:21px;height:21px;}
+  .feature-card h4{font-size:.95rem;font-weight:700;color:var(--text-bright);margin-bottom:6px;}
+  .feature-card p{font-size:.85rem;color:var(--text-2);margin:0;line-height:1.6;}
+
+  /* CALLOUTS */
+  .callout{border-radius:var(--radius);padding:16px 20px;margin:16px 0;display:flex;gap:14px;align-items:flex-start;border:1px solid;font-size:.9rem;line-height:1.65;}
+  .callout-icon{flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;margin-top:1px;}
+  .callout-icon svg{width:15px;height:15px;}
+  .callout-body{flex:1;min-width:0;}
+  .callout-body strong{display:block;margin-bottom:4px;font-weight:700;}
+  .callout.info{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.25);}
+  .callout.info .callout-icon{background:rgba(59,130,246,.15);color:var(--blue);}
+  .callout.info strong{color:var(--blue);}
+  .callout.warn{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.25);}
+  .callout.warn .callout-icon{background:rgba(245,158,11,.15);color:var(--amber);}
+  .callout.warn strong{color:var(--amber);}
+  .callout.success{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.25);}
+  .callout.success .callout-icon{background:rgba(16,185,129,.15);color:var(--accent);}
+  .callout.success strong{color:var(--accent);}
+  .callout.violet{background:rgba(139,92,246,.06);border-color:rgba(139,92,246,.25);}
+  .callout.violet .callout-icon{background:rgba(139,92,246,.15);color:var(--violet);}
+  .callout.violet strong{color:var(--violet-2);}
+  .callout.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);}
+  .callout.danger .callout-icon{background:rgba(239,68,68,.15);color:var(--red);}
+  .callout.danger strong{color:var(--red);}
+
+  /* HERO */
+  .hero{background:linear-gradient(135deg,var(--surface-2),var(--surface-3));border:1px solid var(--border);border-radius:var(--radius-xl);padding:44px 40px;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-50%;right:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(16,185,129,.15),transparent 70%);pointer-events:none;}
+  .hero::after{content:'';position:absolute;bottom:-40%;left:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(139,92,246,.1),transparent 70%);pointer-events:none;}
+  .hero-content{position:relative;z-index:2;max-width:640px;}
+  .hero-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--accent);padding:7px 16px;border-radius:999px;font-size:.74rem;font-weight:700;font-family:var(--mono);letter-spacing:.5px;margin-bottom:20px;}
+  .hero-tag svg{width:14px;height:14px;}
+  .hero h1{font-size:clamp(1.8rem,3.8vw,2.6rem);font-weight:800;letter-spacing:-.035em;line-height:1.1;color:var(--text-bright);margin-bottom:16px;}
+  .hero h1 .gradient-text{background:linear-gradient(135deg,var(--accent),var(--accent-3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero p{font-size:1rem;color:var(--text-2);line-height:1.7;margin-bottom:24px;}
+  .hero-meta{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:26px;}
+  .hero-meta-item{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--text-2);}
+  .hero-meta-item svg{width:16px;height:16px;color:var(--accent);}
+  .hero-illustration{position:absolute;top:50%;right:32px;transform:translateY(-50%);width:280px;height:280px;opacity:.9;pointer-events:none;z-index:1;}
+  @media(max-width:1100px){.hero-illustration{display:none;}}
+  .hero-illustration svg{width:100%;height:100%;}
+  .node-pulse{animation:nodePulse 3s ease-in-out infinite;}
+  @keyframes nodePulse{0%,100%{opacity:.6;r:5;}50%{opacity:1;r:7;}}
+  .line-flow{stroke-dasharray:6 4;animation:dashFlow 3s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-20;}}
+
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:12px 24px;border-radius:11px;font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;border:none;letter-spacing:-.01em;}
+  .btn svg{width:16px;height:16px;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0a0f1c;box-shadow:0 6px 20px var(--accent-glow);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px var(--accent-glow);}
+  .btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border-2);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-ghost{background:transparent;color:var(--accent);border:1px solid rgba(16,185,129,.3);}
+  .btn-ghost:hover{background:rgba(16,185,129,.08);border-color:var(--accent);}
+  .btn-sm{padding:9px 16px;font-size:.82rem;}
+
+  /* TABLES */
+  .table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;background:var(--surface-2);}
+  table{width:100%;border-collapse:collapse;font-size:.87rem;}
+  th{background:var(--surface-3);color:var(--text-bright);font-weight:700;padding:12px 14px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border-2);}
+  td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;line-height:1.6;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr{transition:background .15s;}
+  tbody tr:hover{background:var(--surface-3);}
+  td strong{color:var(--text-bright);}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.3px;white-space:nowrap;}
+  .badge.green{background:rgba(16,185,129,.12);color:var(--accent);border:1px solid rgba(16,185,129,.25);}
+  .badge.violet{background:rgba(139,92,246,.12);color:var(--violet-2);border:1px solid rgba(139,92,246,.25);}
+  .badge.blue{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25);}
+  .badge.amber{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25);}
+  .badge.red{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+
+  /* PROGRESS */
+  .progress-block{background:linear-gradient(135deg,var(--surface-2),var(--surface-3));border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 26px;margin:18px 0;}
+  .progress-block .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .progress-block .head h4{font-size:.92rem;font-weight:700;color:var(--text-bright);margin:0;}
+  .progress-block .head .val{font-family:var(--mono);font-size:.86rem;font-weight:800;color:var(--accent);}
+  .progress-track{height:9px;background:var(--surface-3);border-radius:999px;overflow:hidden;position:relative;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-3));width:0%;transition:width .5s ease;border-radius:999px;box-shadow:0 0 12px var(--accent-glow);}
+  .progress-sub{font-size:.76rem;color:var(--text-3);margin-top:8px;font-family:var(--mono);}
+
+  /* FORMS */
+  .form-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:20px 0;position:relative;overflow:hidden;}
+  .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--violet));}
+  .form-card-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
+  .form-card-header .badge-form{padding:4px 10px;background:rgba(16,185,129,.12);color:var(--accent);border:1px solid rgba(16,185,129,.3);border-radius:6px;font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.5px;}
+  .form-card-header h4{font-size:1rem;font-weight:700;color:var(--text-bright);margin:0;}
+  .form-card-desc{font-size:.84rem;color:var(--text-2);margin-bottom:18px;line-height:1.6;}
+  .form-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .form-field{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .form-field.full{flex:1 1 100%;}
+  .form-field label{font-size:.76rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;font-family:var(--mono);}
+  .form-field label .req{color:var(--red);margin-left:2px;}
+  .form-field input,.form-field textarea,.form-field select{background:var(--bg-2);border:1.5px solid var(--border-2);border-radius:10px;padding:10px 13px;color:var(--text-bright);font-size:.88rem;font-family:var(--font);width:100%;transition:all .18s;}
+  .form-field textarea{resize:vertical;min-height:76px;line-height:1.55;}
+  .form-field input:focus,.form-field textarea:focus,.form-field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+  .form-field input::placeholder,.form-field textarea::placeholder{color:var(--text-3);opacity:.7;}
+
+  /* EDIT TABLE */
+  .edit-table-wrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:14px 0;background:var(--bg-2);}
+  .edit-table-wrap table{font-size:.85rem;}
+  .edit-table-wrap th{font-size:.7rem;padding:10px 11px;background:var(--surface-3);}
+  .edit-table-wrap td{padding:9px 11px;}
+  .edit-table-wrap input,.edit-table-wrap textarea,.edit-table-wrap select{background:var(--surface-3);border:1px solid var(--border-2);border-radius:7px;padding:8px 10px;color:var(--text-bright);font-size:.83rem;font-family:var(--font);width:100%;transition:all .18s;}
+  .edit-table-wrap textarea{resize:vertical;min-height:52px;line-height:1.5;}
+  .edit-table-wrap input:focus,.edit-table-wrap textarea:focus,.edit-table-wrap select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,185,129,.1);}
+  .btn-remove{background:transparent;border:1px solid rgba(239,68,68,.3);color:#f87171;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.74rem;font-weight:600;transition:all .18s;font-family:var(--font);}
+  .btn-remove:hover{background:rgba(239,68,68,.1);border-color:var(--red);}
+  .empty-msg{text-align:center;padding:18px;color:var(--text-3);font-size:.83rem;font-style:italic;}
+  .msg{border-radius:10px;padding:11px 15px;font-size:.84rem;margin-top:12px;display:none;font-weight:600;}
+  .msg.show{display:block;animation:cardIn .25s ease;}
+  .msg.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--accent);}
+  .msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+
+  /* PHOTO UPLOAD */
+  .photo-upload{border:2px dashed var(--border-2);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface-2);margin:12px 0;}
+  .photo-upload:hover{border-color:var(--accent);background:var(--surface-3);}
+  .photo-upload.drag{border-color:var(--accent);background:rgba(16,185,129,.06);}
+  .photo-upload .upload-icon{font-size:2rem;margin-bottom:8px;color:var(--text-3);}
+  .photo-upload p{font-size:.88rem;color:var(--text-2);margin:0;}
+  .photo-upload .hint{font-size:.78rem;color:var(--text-3);margin-top:4px;}
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:14px;}
+  .photo-item{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border-2);background:var(--bg-2);}
+  .photo-item img{width:100%;height:120px;object-fit:cover;display:block;}
+  .photo-item .photo-name{font-size:.7rem;padding:6px 8px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--surface-3);}
+  .photo-item .photo-remove{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(239,68,68,.9);color:#fff;border:none;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;}
+  .photo-item .photo-remove:hover{background:var(--red);}
+
+  /* COMPLETE */
+  .complete-banner{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(163,230,53,.05));border:1px solid rgba(16,185,129,.3);border-radius:var(--radius-lg);padding:26px;text-align:center;margin:20px 0;}
+  .complete-banner .icon{width:56px;height:56px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:#0a0f1c;box-shadow:0 0 30px var(--accent-glow);}
+  .complete-banner .icon svg{width:28px;height:28px;stroke-width:2.5;}
+  .complete-banner h3{border:none;padding:0;margin:0 0 8px;justify-content:center;color:var(--accent);font-size:1.15rem;}
+  .complete-banner h3::before{display:none;}
+  .complete-banner p{color:var(--text-2);margin-bottom:18px;font-size:.92rem;}
+
+  /* CARD FOOTER */
+  .card-footer{margin-top:32px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;}
+  .card-footer .step-hint{font-family:var(--mono);font-size:.74rem;color:var(--text-3);letter-spacing:.5px;margin-right:auto;}
+  .card-footer .step-hint strong{color:var(--accent);}
+  .btn-continue{padding:14px 32px;font-size:.95rem;border-radius:12px;}
+
+  /* SIDEBAR TOGGLE */
+  .hamburger{display:none;}
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;}
+
+  footer{border-top:1px solid var(--border);padding:20px 24px;text-align:center;font-size:.76rem;color:var(--text-3);font-family:var(--mono);letter-spacing:.3px;}
+
+  @media(max-width:1000px){
+    .dashboard{grid-template-columns:1fr;gap:18px;padding:20px 16px 30px;}
+    .hamburger{display:flex;}
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:280px;max-height:100vh;transform:translateX(-100%);transition:transform .3s ease;z-index:200;border-radius:0;box-shadow:0 0 40px rgba(0,0,0,.4);}
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-backdrop.open{display:block;}
+    .card-stage{padding:28px 22px;border-radius:var(--radius-lg);}
+    .card-stage::before{left:22px;right:22px;}
+    .hero{padding:32px 24px;}
+    .card-grid{grid-template-columns:1fr;}
+    .card-footer{flex-direction:column-reverse;}
+    .card-footer .btn-continue{width:100%;}
+    .card-footer .step-hint{width:100%;text-align:center;margin:0;}
+    table{font-size:.8rem;}
+    th,td{padding:9px 10px;}
+    .form-card{padding:18px;}
+    .brand-text span{display:none;}
+    .class-pill{display:none;}
+    .topbar-divider{display:none;}
+    .topbar-inner{padding:12px 16px;gap:10px;}
+    .topbar-progress{max-width:120px;}
+  }
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn hamburger" id="hamburger" aria-label="Abrir menú">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round"/></svg>
+    </button>
+    <div class="brand">
+      <div class="brand-logo">&gt;_</div>
+      <div class="brand-text">
+        <strong>SecNet Academy</strong>
+        <span>OVA · Clase 03</span>
+      </div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="class-pill"><span class="dot"></span>Clase 3 de 5</div>
+    <div class="topbar-progress">
+      <span class="label">Progreso</span>
+      <div class="track"><div class="fill" id="topbarFill"></div></div>
+      <span class="pct" id="topbarPct">0%</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">Contenido de la clase</div>
+    <div class="sidebar-section">Teoría</div>
+    <a class="nav-item active" data-section="0" href="#c0"><span class="num">00</span> Portada<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="1" href="#c1"><span class="num">01</span> Repaso<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="2" href="#c2"><span class="num">02</span> Validación<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="3" href="#c3"><span class="num">03</span> Errores y logging<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="4" href="#c4"><span class="num">04</span> Cifrado<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="5" href="#c5"><span class="num">05</span> SAST y secretos<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <div class="sidebar-section">Investigación</div>
+    <a class="nav-item" data-section="6" href="#c6"><span class="num">06</span> Investigar controles<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="7" href="#c7"><span class="num">07</span> Investigar SAST<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="8" href="#c8"><span class="num">08</span> Conclusiones investigación<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <div class="sidebar-section">Evidencia</div>
+    <a class="nav-item" data-section="9" href="#c9"><span class="num">09</span> Subir fotos<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+    <a class="nav-item" data-section="10" href="#c10"><span class="num">10</span> Descargar informe<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/></svg></a>
+  </aside>
+  <div class="sidebar-backdrop" id="backdrop"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- CARD 0: PORTADA -->
+    <div class="card-stage active" id="c0">
+      <div class="hero">
+        <div class="hero-content">
+          <div class="hero-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            OVA · Clase 3 de 5
+          </div>
+          <h1>Codificación segura: <span class="gradient-text">teoría, investigación y evidencia</span></h1>
+          <p>Esta clase tiene tres fases claras: primero lees y comprendes la base teórica de los controles de seguridad; después investigas cómo se aplican en tu propio código y en fuentes normativas; y al final subes las fotos de evidencia. El resultado es un informe detallado con todo lo que encontraste.</p>
+          <div class="hero-meta">
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              3 horas de trabajo
+            </div>
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              3 fases: teoría, investigación, evidencia
+            </div>
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              ASVS V5 · V6 · V7 · SSDF PW.7 · PW.9
+            </div>
+          </div>
+        </div>
+        <div class="hero-illustration" aria-hidden="true">
+          <svg viewBox="0 0 300 300" fill="none">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#a3e635"/></linearGradient>
+              <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient>
+            </defs>
+            <circle cx="150" cy="150" r="110" stroke="#10b981" stroke-width="1" stroke-opacity="0.15" fill="none"/>
+            <circle cx="150" cy="150" r="70" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.15" fill="none"/>
+            <path class="line-flow" d="M150 150 L150 50" stroke="url(#g1)" stroke-width="2"/>
+            <path class="line-flow" d="M150 150 L250 150" stroke="url(#g2)" stroke-width="2" style="animation-delay:.5s"/>
+            <path class="line-flow" d="M150 150 L210 230" stroke="url(#g1)" stroke-width="2" style="animation-delay:1s"/>
+            <path class="line-flow" d="M150 150 L60 220" stroke="url(#g2)" stroke-width="2" style="animation-delay:1.5s"/>
+            <path class="line-flow" d="M150 150 L50 80" stroke="url(#g1)" stroke-width="2" style="animation-delay:2s"/>
+            <circle class="node-pulse" cx="150" cy="50" r="5" fill="#10b981"/>
+            <circle class="node-pulse" cx="250" cy="150" r="5" fill="#8b5cf6" style="animation-delay:.5s"/>
+            <circle class="node-pulse" cx="210" cy="230" r="5" fill="#10b981" style="animation-delay:1s"/>
+            <circle class="node-pulse" cx="60" cy="220" r="5" fill="#8b5cf6" style="animation-delay:1.5s"/>
+            <circle class="node-pulse" cx="50" cy="80" r="5" fill="#a3e635" style="animation-delay:2s"/>
+            <circle cx="150" cy="150" r="12" fill="url(#g1)"/>
+            <circle cx="150" cy="150" r="18" stroke="#10b981" stroke-width="1.5" fill="none" stroke-opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>1</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="1">
+          Comenzar: teoría
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ FASE 1: TEORÍA ============ -->
+
+    <!-- CARD 1: REPASO -->
+    <div class="card-stage" id="c1">
+      <div class="sec-eyebrow">Fase 1 · Teoría · Paso 01</div>
+      <h2 class="sec-title">Lo que prometieron, lo que decidieron, lo que falta demostrar</h2>
+      <p class="sec-desc">En la Clase 1 definieron los controles de seguridad de su herramienta. En la Clase 2 eligieron lenguaje y componentes. Hoy deben <strong>comprender cada control</strong> antes de implementarlo, <strong>investigar</strong> cómo se aplica en su código y <strong>demostrar</strong> con fotos que existe.</p>
+
+      <div class="callout warn">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Regla de la clase</strong>
+          Cada control debe tener <strong>teoría comprendida</strong>, <strong>investigación registrada</strong> (cómo se aplica en su código y qué dice la norma) y <strong>evidencia fotográfica</strong>. Sin las tres, el control no cuenta.
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          </div>
+          <h4>Fase 1: Teoría</h4>
+          <p>Leer y comprender los cuatro controles fundamentales: validación, errores y logging, cifrado, SAST y secretos.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </div>
+          <h4>Fase 2: Investigación</h4>
+          <p>Buscar en su propio código cómo se aplica cada control, citar la norma y registrar hallazgos del análisis estático.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <h4>Fase 3: Evidencia</h4>
+          <p>Subir fotos de la implementación, del reporte SAST y de la revisión de secretos. Las fotos irán al informe.</p>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>2</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="2">
+          Continuar: validación
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 2: VALIDACIÓN (TEORÍA EXTENSA) -->
+    <div class="card-stage" id="c2">
+      <div class="sec-eyebrow">Fase 1 · Teoría · Paso 02</div>
+      <h2 class="sec-title">Validación de entradas: "toda entrada es hostil"</h2>
+      <p class="sec-desc">La validación de entradas es la primera línea de defensa de cualquier herramienta. OWASP ASVS la trata como el control más crítico: la mayoría de vulnerabilidades graves (inyección SQL, XSS, command injection, path traversal) nacen de no validar correctamente lo que entra al sistema.</p>
+
+      <h3>Por qué la validación del cliente no sirve</h3>
+      <p>Un error común de los equipos noveles es confiar en la validación del navegador o de la interfaz. Un atacante puede saltarse el navegador con un proxy (Burp Suite, OWASP ZAP) o con <code>curl</code> y enviar peticiones directamente al servidor. <strong>La validación real ocurre en el servidor</strong>, en cada punto de entrada: formularios, APIs, cabeceras HTTP, cookies, archivos, parámetros de URL.</p>
+
+      <div class="callout danger">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Error clásico</strong>
+          "Validé el campo en JavaScript, así que el servidor está protegido." Falso. El atacante no usa tu JavaScript. Envía la petición directamente y el servidor recibe lo que él quiere.
+        </div>
+      </div>
+
+      <h3>Validación positiva (lista blanca) vs. negativa (lista negra)</h3>
+      <p>ASVS exige <strong>validación positiva</strong>: definir exactamente qué se permite y rechazar todo lo demás. La validación negativa ("bloquear caracteres raros") falla porque siempre hay una codificación o sintaxis que el atacante puede usar para evadir el filtro.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tipo</th><th>Enfoque</th><th>Problema</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Lista blanca (positiva)</strong></td><td>Definir qué es válido: "solo IPv4 en formato X.Y.Z.W, puerto entre 1 y 65535"</td><td>Ninguno. Es el enfoque correcto.</td></tr>
+            <tr><td><strong>Lista negra (negativa)</strong></td><td>Bloquear caracteres conocidos como peligrosos: <code>;</code>, <code>|</code>, <code>&lt;</code>, <code>&gt;</code></td><td>El atacante usa codificación Unicode, saltos de línea, o sintaxis alternativa que el filtro no contempla.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Validación aplicada a una herramienta de red</h3>
+      <p>Si su herramienta recibe una IP o un puerto para escanear, no basta con "limpiar" la entrada. Deben validar:</p>
+      <ul>
+        <li><strong>IP:</strong> que sea una IPv4 o IPv6 válida (usar una librería de parsing, no una regex frágil).</li>
+        <li><strong>Puerto:</strong> que sea un número entero entre 1 y 65535.</li>
+        <li><strong>Comando:</strong> que no incluya caracteres de shell (<code>;</code>, <code>|</code>, <code>&amp;</code>, backticks) si van a ejecutar comandos del sistema.</li>
+        <li><strong>Longitud:</strong> rechazar entradas que excedan un tamaño razonable (previene buffer overflows y DoS).</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Cita normativa</strong>
+          OWASP ASVS 5.0, sección V5 (Validación de Entradas). Requisitos nivel 1: 5.3 (fallos de validación se rechazan y se registran) y 5.5 (validación aplicada en el servidor). NIST SSDF PW.7 (revisar código para identificar vulnerabilidades antes del release).
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>3</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="3">
+          Continuar: errores y logging
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 3: ERRORES Y LOGGING (TEORÍA EXTENSA) -->
+    <div class="card-stage" id="c3">
+      <div class="sec-eyebrow">Fase 1 · Teoría · Paso 03</div>
+      <h2 class="sec-title">Manejo de errores y logging: "no alimentes al atacante"</h2>
+      <p class="sec-desc">Los errores son información. Si su herramienta muestra un stack trace con rutas del servidor, versiones de librerías o consultas SQL, le están dando al atacante un mapa de su infraestructura. ASVS exige que el usuario vea un mensaje genérico y que el detalle vaya solo al log interno.</p>
+
+      <h3>La regla del mensaje genérico</h3>
+      <p>Cuando algo falla, el usuario debe ver algo como: <strong>"Ocurrió un error. Contacte al administrador."</strong> El detalle técnico (línea de código, mensaje de la base de datos, ruta del archivo) se escribe en el log interno, que solo el equipo puede leer. Esto previene <em>information disclosure</em> (fuga de información), una de las amenazas STRIDE que modelaron en la Clase 1.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Lo que el usuario ve</th><th>Lo que va al log interno</th><th>Por qué</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>"Error al procesar la solicitud."</td><td>Error en línea 45 de parser.py: índice fuera de rango en array de puertos.</td><td>El usuario no necesita saber dónde falló el código. El atacante tampoco.</td></tr>
+            <tr><td>"Credenciales inválidas."</td><td>Intento de login fallido para usuario admin desde IP 192.168.1.50 a las 14:32:05.</td><td>No se revela si el usuario existe o no (evita enumeración de usuarios).</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Logging de auditoría: qué registrar y qué NO</h3>
+      <p>No se trata de registrar todo. Se trata de registrar lo <strong>relevante para seguridad</strong>: intentos de autenticación fallidos, accesos denegados, cambios de configuración, errores de validación de entradas, acciones administrativas. El log debe responder: ¿quién?, ¿qué?, ¿cuándo?, ¿desde dónde?</p>
+
+      <div class="callout danger">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Lo que NUNCA debe ir al log</strong>
+          Contraseñas en texto plano. Tokens de sesión sin hashear. Datos personales sensibles (cédulas, correos completos). Claves de API. Si necesitan correlacionar una sesión, hasheen el token antes de escribirlo.
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Cita normativa</strong>
+          OWASP ASVS 5.0, V7 (Manejo de Errores y Logging). Requisito 7.4.1: mensaje genérico al usuario. Requisito 7.1.1: no loguear credenciales. NIST SSDF PW.9 (configuraciones seguras por defecto, incluyendo logging).
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>4</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="4">
+          Continuar: cifrado
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 4: CIFRADO (TEORÍA EXTENSA) -->
+    <div class="card-stage" id="c4">
+      <div class="sec-eyebrow">Fase 1 · Teoría · Paso 04</div>
+      <h2 class="sec-title">Cifrado: "no inventes tu propia criptografía"</h2>
+      <p class="sec-desc">Hay dos momentos críticos: datos en tránsito y datos en reposo. En ambos, la regla es la misma: usar algoritmos estándar, nunca caseros, nunca obsoletos.</p>
+
+      <h3>En tránsito (TLS)</h3>
+      <p>Toda comunicación entre componentes de su herramienta (consola ↔ agentes, API ↔ cliente) debe ir por TLS 1.2 o superior. TLS 1.0 y 1.1 están deprecados desde 2021. <strong>Nunca desactiven la validación de certificados</strong> con <code>verify=False</code> o equivalentes: eso anula toda la protección contra ataques de intermediario (MITM).</p>
+
+      <div class="callout warn">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Error clásico en Python</strong>
+          <code>requests.get(url, verify=False)</code> desactiva la validación del certificado. El equipo cree que "funciona" porque no lanza error, pero en realidad están aceptando cualquier certificado, incluido el de un atacante.
+        </div>
+      </div>
+
+      <h3>En reposo (contraseñas y datos sensibles)</h3>
+      <p>Si su herramienta almacena credenciales de usuarios, <strong>jamás las guarden en texto plano ni con MD5/SHA-1</strong>. MD5 puede calcular ~10 mil millones de hashes por segundo en una GPU moderna; una contraseña de 6 caracteres cae en menos de un segundo. Usen <strong>Argon2</strong> (recomendación actual de OWASP), <strong>bcrypt</strong> (con factor de costo 12) o <strong>PBKDF2</strong> (con al menos 600,000 iteraciones). Estas funciones son lentas a propósito y generan salt automático.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Algoritmo</th><th>Estado</th><th>Recomendación</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>MD5</td><td>Roto</td><td>Nunca usar para contraseñas.</td></tr>
+            <tr><td>SHA-1</td><td>Deprecado</td><td>Nunca usar para contraseñas.</td></tr>
+            <tr><td>SHA-256 (simple)</td><td>Rápido</td><td>No usar para contraseñas: demasiado rápido, vulnerable a fuerza bruta.</td></tr>
+            <tr><td>bcrypt / Argon2 / PBKDF2</td><td>Recomendado</td><td>Usar con factor de costo o iteraciones adecuadas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Cita normativa</strong>
+          OWASP ASVS 5.0, V6 (Criptografía) y V9 (Comunicaciones). Nivel 1: TLS moderno y hashing de contraseñas con algoritmos lentos. NIST SSDF PW.9 (configuraciones seguras).
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>5</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="5">
+          Continuar: SAST y secretos
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 5: SAST Y SECRETOS (TEORÍA EXTENSA) -->
+    <div class="card-stage" id="c5">
+      <div class="sec-eyebrow">Fase 1 · Teoría · Paso 05</div>
+      <h2 class="sec-title">SAST y secretos: tu código también se audita</h2>
+      <p class="sec-desc">El análisis estático (SAST) examina el código sin ejecutarlo, buscando patrones peligrosos: inyecciones, uso de funciones inseguras, flujos de datos desde fuentes no confiables hacia sinks peligrosos. No es una bala de plata, pero es mejor que no revisar nada.</p>
+
+      <h3>Cómo interpretar un reporte SAST</h3>
+      <p>No se asusten por el número de hallazgos. Prioricen por:</p>
+      <ol>
+        <li><strong>¿El dato viene realmente de un usuario no confiable?</strong> Si el hallazgo está en una función interna que solo recibe datos validados, probablemente es falso positivo.</li>
+        <li><strong>¿Hay una sanitización en el camino que la herramienta no reconoció?</strong> SAST a veces no ve que ya validaron la entrada antes de pasarla al sink.</li>
+        <li><strong>¿El sink realmente interpreta el dato de forma peligrosa?</strong> No es lo mismo concatenar una cadena para mostrarla que pasarla a <code>eval()</code> o a una consulta SQL.</li>
+      </ol>
+      <p>Un hallazgo de severidad alta pero confianza baja es una <strong>pregunta</strong>, no una emergencia. Un hallazgo de severidad baja pero confianza alta en un punto de entrada crítico es prioritario.</p>
+
+      <h3>Herramientas ligeras por lenguaje</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Lenguaje</th><th>Herramienta SAST</th><th>Cómo se ejecuta</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Python</td><td>Bandit</td><td><code>bandit -r ./src</code></td></tr>
+            <tr><td>Go</td><td>gosec</td><td><code>gosec ./...</code></td></tr>
+            <tr><td>Rust</td><td>cargo-audit</td><td><code>cargo audit</code></td></tr>
+            <tr><td>JavaScript</td><td>ESLint con reglas de seguridad</td><td>Configurar plugin <code>eslint-plugin-security</code></td></tr>
+            <tr><td>Multi-lenguaje</td><td>Semgrep</td><td><code>semgrep --config=auto</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Secretos en el repositorio: el error catastrófico</h3>
+      <p>Un error clásico y devastador: subir al repositorio un archivo <code>.env</code> con la API key de un servicio, la contraseña de la base de datos, o el token de un agente de IA. Cualquiera con acceso al repo (o un atacante que lo comprometa) tiene acceso a todo.</p>
+
+      <div class="callout danger">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Regla de oro</strong>
+          Los secretos <strong>nunca</strong> van en el código. Van en variables de entorno o en un gestor de secretos. Antes de cada commit, revisen que no haya quedado nada sensible. Si ya subieron un secreto, no basta con borrarlo del archivo: hay que <strong>revocar la clave</strong> y asumir que fue comprometida.
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Cita normativa</strong>
+          NIST SSDF PW.7 (revisar código para identificar vulnerabilidades antes del release) y PS.1 (proteger toda la información del repositorio, incluidos los secretos).
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>6</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="6">
+          Pasar a la investigación
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ FASE 2: INVESTIGACIÓN ============ -->
+
+    <!-- CARD 6: INVESTIGAR CONTROLES -->
+    <div class="card-stage" id="c6">
+      <div class="sec-eyebrow">Fase 2 · Investigación · Paso 06</div>
+      <h2 class="sec-title">Investiga cómo se aplican los controles en tu código</h2>
+      <p class="sec-desc">Ahora que comprendes la teoría, investiga en tu propio proyecto: ¿dónde está implementado cada control? ¿Qué archivo y qué línea? ¿Qué dice la norma exactamente? Registra tus hallazgos.</p>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Qué investigar por cada control</strong>
+          (1) ¿Está implementado en tu código? (2) ¿En qué archivo y línea? (3) ¿Qué requisito específico de ASVS o SSDF cumple? (4) ¿Qué encontraste al revisarlo: está bien, tiene un fallo, falta mejorarlo?
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">INVESTIGACIÓN · 01</span>
+          <h4>Hallazgos de controles en el código</h4>
+        </div>
+        <p class="form-card-desc">Mínimo 4 controles investigados. Cada uno con archivo/línea, norma y hallazgo.</p>
+
+        <div class="edit-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th style="width:20%;">Control <span style="color:var(--red);">*</span></th>
+                <th style="width:18%;">Norma / requisito <span style="color:var(--red);">*</span></th>
+                <th style="width:20%;">Archivo / línea <span style="color:var(--red);">*</span></th>
+                <th>Hallazgo de la investigación <span style="color:var(--red);">*</span></th>
+                <th style="width:70px;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoInvestigacion">
+              <tr><td colspan="6"><div class="empty-msg">Aún no has agregado hallazgos.</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnAgregarInvestigacion" style="margin-top:8px;">+ Agregar hallazgo</button>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>7</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="7">
+          Continuar: investigar SAST
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 7: INVESTIGAR SAST -->
+    <div class="card-stage" id="c7">
+      <div class="sec-eyebrow">Fase 2 · Investigación · Paso 07</div>
+      <h2 class="sec-title">Investiga el análisis estático y los secretos</h2>
+      <p class="sec-desc">Ejecuta el SAST de tu lenguaje, revisa los hallazgos y documenta qué encontraste. También revisa si hay secretos en el repositorio.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">INVESTIGACIÓN · 02</span>
+          <h4>Hallazgos del análisis estático</h4>
+        </div>
+        <p class="form-card-desc">Completa la información del SAST que ejecutaste.</p>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Herramienta SAST usada <span class="req">*</span></label>
+            <select id="herramientaSast">
+              <option value="">-- Selecciona --</option>
+              <option>Bandit (Python)</option>
+              <option>gosec (Go)</option>
+              <option>cargo-audit (Rust)</option>
+              <option>ESLint security (JS)</option>
+              <option>Semgrep</option>
+              <option>Otra</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Total de hallazgos <span class="req">*</span></label>
+            <input type="number" id="totalHallazgos" min="0" placeholder="Ej. 3">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Hallazgos relevantes y cómo los interpretaron <span class="req">*</span></label>
+            <textarea id="hallazgosSast" placeholder="Ej.: Bandit reportó 2 hallazgos de severidad baja en subprocess. Uno era falso positivo (comando hardcodeado). El otro lo corregimos usando lista de argumentos en lugar de shell=True."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>¿Revisaron que no haya secretos en el repositorio? <span class="req">*</span></label>
+            <select id="revisionSecretos">
+              <option value="">-- Selecciona --</option>
+              <option>Sí, no encontramos secretos</option>
+              <option>Sí, encontramos y removimos un secreto</option>
+              <option>No, aún no lo hemos revisado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Detalle de la revisión de secretos</label>
+            <textarea id="detalleSecretos" placeholder="Ej.: Revisamos el repo con git-secrets y no encontramos claves. El archivo .env está en .gitignore."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>8</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="8">
+          Continuar: conclusiones
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 8: CONCLUSIONES INVESTIGACIÓN -->
+    <div class="card-stage" id="c8">
+      <div class="sec-eyebrow">Fase 2 · Investigación · Paso 08</div>
+      <h2 class="sec-title">Conclusiones de la investigación</h2>
+      <p class="sec-desc">Cierra la fase de investigación con una reflexión del equipo: qué encontraron, qué corrigieron y qué falta por implementar.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">INVESTIGACIÓN · 03</span>
+          <h4>Conclusiones</h4>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>¿Qué controles encontraron implementados y cuáles faltan? <span class="req">*</span></label>
+            <textarea id="conclusionInvestigacion" placeholder="Ej.: Encontramos validación de IPs implementada, logging de intentos fallidos, pero falta cifrado en reposo para los logs. El SAST no reportó hallazgos críticos."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>¿Qué corregirán antes de la Clase 4? <span class="req">*</span></label>
+            <textarea id="correcciones" placeholder="Ej.: 1. Implementar cifrado de logs con AES-256. 2. Agregar validación de puertos. 3. Revisar el manejo de errores del endpoint de administración."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field full">
+            <label>Fuentes consultadas (normas, documentación, tutoriales)</label>
+            <textarea id="fuentesConsultadas" placeholder="Ej.: OWASP ASVS 5.0 sección V5, NIST SSDF PW.7, documentación de Bandit, guía de bcrypt de OWASP."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>9</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="9">
+          Pasar a la evidencia
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ FASE 3: EVIDENCIA ============ -->
+
+    <!-- CARD 9: SUBIR FOTOS -->
+    <div class="card-stage" id="c9">
+      <div class="sec-eyebrow">Fase 3 · Evidencia · Paso 09</div>
+      <h2 class="sec-title">Sube las fotos de evidencia</h2>
+      <p class="sec-desc">Solo imágenes PNG o JPG. Estas fotos se incluirán en el informe descargable. Sube capturas del código implementado, del reporte SAST y de la revisión de secretos.</p>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="badge-form">EVIDENCIA</span>
+          <h4>Fotos de evidencia</h4>
+        </div>
+        <p class="form-card-desc">Máximo 5 MB por foto. Puedes subir varias a la vez.</p>
+
+        <div class="photo-upload" id="photoUploadEvidencia">
+          <div class="upload-icon">📷</div>
+          <p><strong>Haz clic o arrastra las fotos aquí</strong></p>
+          <p class="hint">Solo imágenes PNG/JPG. Máximo 5 MB por foto.</p>
+          <input type="file" id="inputPhotoEvidencia" accept="image/png,image/jpeg" multiple style="display:none;">
+        </div>
+        <div class="photo-grid" id="photoGridEvidencia"></div>
+
+        <div class="form-row" style="margin-top:16px;">
+          <div class="form-field full">
+            <label>Descripción de las fotos subidas</label>
+            <textarea id="descripcionFotos" placeholder="Ej.: Foto 1: código de validación de IPs en parser.py línea 45. Foto 2: reporte de Bandit con 2 hallazgos. Foto 3: archivo .env en .gitignore."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>10</strong> de <strong>11</strong></span>
+        <button class="btn btn-primary btn-continue" data-next="10">
+          Continuar: descargar informe
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 10: DESCARGAR INFORME -->
+    <div class="card-stage" id="c10">
+      <div class="sec-eyebrow">Fase 3 · Evidencia · Paso 10</div>
+      <h2 class="sec-title">Descarga el informe completo</h2>
+      <p class="sec-desc">El informe incluye las tres fases: teoría (resumen de controles), investigación (hallazgos y conclusiones) y evidencia (fotos subidas).</p>
+
+      <div class="progress-block">
+        <div class="head">
+          <h4>Estado del informe de Clase 3</h4>
+          <span class="val" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-sub" id="progressSub">0 de 8 campos completados</div>
+      </div>
+
+      <div class="complete-banner">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Informe de Clase 3 listo para exportar</h3>
+        <p>Incluye: resumen teórico de los controles, hallazgos de investigación con normas, conclusiones, correcciones pendientes y <strong>las fotos que subiste</strong>.</p>
+        <button class="btn btn-primary" id="btnDescargar" style="font-size:.95rem;padding:14px 30px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Descargar informe Clase 3 (.html)
+        </button>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </div>
+        <div class="callout-body">
+          <strong>Anexar al informe maestro</strong>
+          Este informe es independiente. Guárdenlo junto al de Clase 1 y Clase 2. Al final de la Clase 6 tendrán un documento integrado con todas las decisiones y evidencias del proyecto.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <span class="step-hint">Paso <strong>11</strong> de <strong>11</strong></span>
+        <button class="btn btn-secondary" data-next="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Volver al inicio
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  SecNet Academy · OVA Clase 03 · Codificación segura: teoría, investigación y evidencia · 2025
+</footer>
+
+<script>
+/* ============ ESTADO ============ */
+const estado = {
+  investigacion: [],
+  fotos: []
+};
+let cardActual = 0;
+
+function esc(s){
+  if(s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============ TEMA ============ */
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const sunPath = '<circle cx="12" cy="12" r="4" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke-width="2" stroke-linecap="round"/>';
+const moonPath = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  themeIcon.innerHTML = theme === 'dark' ? sunPath : moonPath;
+  localStorage.setItem('ova-theme', theme);
+}
+(function initTheme(){
+  const saved = localStorage.getItem('ova-theme');
+  if(saved){ applyTheme(saved); return; }
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? 'dark' : 'light');
+})();
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+/* ============ NAVEGACIÓN ============ */
+const cards = document.querySelectorAll('.card-stage');
+const navItems = document.querySelectorAll('.nav-item');
+const visited = new Set(['0']);
+
+function gotoCard(id){
+  cards.forEach(c => c.classList.toggle('active', c.id === 'c' + id));
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.section === String(id)));
+  visited.add(String(id));
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(window.innerWidth <= 1000){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('backdrop').classList.remove('open');
+  }
+  updateNavChecks();
+  updateProgress();
+}
+
+document.querySelectorAll('[data-next]').forEach(btn => {
+  btn.addEventListener('click', () => gotoCard(parseInt(btn.dataset.next)));
+});
+navItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    gotoCard(parseInt(item.dataset.section));
+  });
+});
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('backdrop').classList.toggle('open');
+});
+document.getElementById('backdrop').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+});
+
+function updateNavChecks(){
+  navItems.forEach(n => {
+    n.classList.toggle('done', visited.has(n.dataset.section) && n.dataset.section !== '0');
+  });
+}
+
+/* ============ INVESTIGACIÓN ============ */
+const cuerpoInvestigacion = document.getElementById('cuerpoInvestigacion');
+const btnAgregarInvestigacion = document.getElementById('btnAgregarInvestigacion');
+
+function renderInvestigacion(){
+  if(estado.investigacion.length === 0){
+    cuerpoInvestigacion.innerHTML = '<tr><td colspan="6"><div class="empty-msg">Aún no has agregado hallazgos.</div></td></tr>';
+  } else {
+    cuerpoInvestigacion.innerHTML = estado.investigacion.map((c, i) => `
+      <tr>
+        <td style="text-align:center;color:var(--text-3);font-family:var(--mono);">${String(i+1).padStart(2,'0')}</td>
+        <td><input data-inv="${i}" data-campo="control" value="${esc(c.control)}" placeholder="Ej. Validación de IPs"></td>
+        <td><input data-inv="${i}" data-campo="norma" value="${esc(c.norma)}" placeholder="Ej. ASVS V5.5"></td>
+        <td><input data-inv="${i}" data-campo="ubicacion" value="${esc(c.ubicacion)}" placeholder="Ej. parser.py línea 45"></td>
+        <td><textarea data-inv="${i}" data-campo="hallazgo" placeholder="¿Qué encontraste al revisar?">${esc(c.hallazgo)}</textarea></td>
+        <td style="text-align:center;"><button class="btn-remove" data-index="${i}">Quitar</button></td>
+      </tr>
+    `).join('');
+    cuerpoInvestigacion.querySelectorAll('[data-inv]').forEach(el => {
+      el.addEventListener('input', function(){
+        estado.investigacion[parseInt(this.getAttribute('data-inv'))][this.getAttribute('data-campo')] = this.value;
+        updateProgress();
+      });
+    });
+    cuerpoInvestigacion.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', function(){
+        estado.investigacion.splice(parseInt(this.getAttribute('data-index')), 1);
+        renderInvestigacion(); updateProgress();
+      });
+    });
+  }
+  updateProgress();
+}
+
+btnAgregarInvestigacion.addEventListener('click', () => {
+  if(estado.investigacion.length >= 8){ alert('Máximo 8 hallazgos para esta sesión.'); return; }
+  estado.investigacion.push({control:'', norma:'', ubicacion:'', hallazgo:''});
+  renderInvestigacion(); updateProgress();
+});
+
+/* ============ FOTOS ============ */
+function setupPhotoUpload(uploadId, inputId, gridId, targetArray, renderCallback){
+  const upload = document.getElementById(uploadId);
+  const input = document.getElementById(inputId);
+
+  upload.addEventListener('click', () => input.click());
+  ['dragenter','dragover'].forEach(ev => upload.addEventListener(ev, (e) => { e.preventDefault(); upload.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => upload.addEventListener(ev, (e) => { e.preventDefault(); upload.classList.remove('drag'); }));
+  upload.addEventListener('drop', (e) => {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  });
+  input.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+    input.value = '';
+  });
+
+  function handleFiles(files){
+    Array.from(files).forEach(file => {
+      if(!file.type.match(/image\/(png|jpeg)/)){ alert('Solo PNG o JPG: ' + file.name); return; }
+      if(file.size > 5*1024*1024){ alert('Máximo 5 MB: ' + file.name); return; }
+      const reader = new FileReader();
+      reader.onload = function(e){
+        targetArray.push({ data: e.target.result, nombre: file.name });
+        renderCallback();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  renderCallback();
+}
+
+function renderPhotoGrid(gridId, array, onRemove){
+  const grid = document.getElementById(gridId);
+  if(array.length === 0){ grid.innerHTML = ''; return; }
+  grid.innerHTML = array.map((p, i) => `
+    <div class="photo-item">
+      <img src="${p.data}" alt="${esc(p.nombre)}">
+      <div class="photo-name">${esc(p.nombre)}</div>
+      <button class="photo-remove" data-idx="${i}">×</button>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.photo-remove').forEach(btn => {
+    btn.addEventListener('click', function(){
+      const idx = parseInt(this.getAttribute('data-idx'));
+      onRemove(idx);
+    });
+  });
+}
+
+function renderFotos(){
+  renderPhotoGrid('photoGridEvidencia', estado.fotos, (idx) => {
+    estado.fotos.splice(idx, 1);
+    renderFotos();
+    updateProgress();
+  });
+}
+
+setupPhotoUpload('photoUploadEvidencia','inputPhotoEvidencia','photoGridEvidencia', estado.fotos, renderFotos);
+
+/* ============ PROGRESO ============ */
+function updateProgress(){
+  const checks = [
+    () => estado.investigacion.length >= 4 && estado.investigacion.every(c => c.control.trim() && c.norma.trim() && c.ubicacion.trim() && c.hallazgo.trim()),
+    () => document.getElementById('herramientaSast').value !== '',
+    () => document.getElementById('totalHallazgos').value !== '',
+    () => document.getElementById('hallazgosSast').value.trim() !== '',
+    () => document.getElementById('revisionSecretos').value !== '',
+    () => document.getElementById('conclusionInvestigacion').value.trim() !== '',
+    () => document.getElementById('correcciones').value.trim() !== '',
+    () => estado.fotos.length > 0
+  ];
+  const ok = checks.filter(fn => { try { return fn(); } catch(e){ return false; } }).length;
+  const pct = Math.round((ok/checks.length)*100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressSub').textContent = ok + ' de ' + checks.length + ' campos completados';
+  document.getElementById('topbarFill').style.width = pct + '%';
+  document.getElementById('topbarPct').textContent = pct + '%';
+}
+document.querySelectorAll('input, textarea, select').forEach(el => {
+  el.addEventListener('input', updateProgress);
+  el.addEventListener('change', updateProgress);
+});
+
+/* ============ GENERAR INFORME ============ */
+function generarInformeHTML(){
+  const herramienta = document.getElementById('herramientaSast').value;
+  const totalHallazgos = document.getElementById('totalHallazgos').value;
+  const hallazgosSast = document.getElementById('hallazgosSast').value.trim();
+  const revisionSecretos = document.getElementById('revisionSecretos').value;
+  const detalleSecretos = document.getElementById('detalleSecretos').value.trim();
+  const conclusionInvestigacion = document.getElementById('conclusionInvestigacion').value.trim();
+  const correcciones = document.getElementById('correcciones').value.trim();
+  const fuentesConsultadas = document.getElementById('fuentesConsultadas').value.trim();
+  const descripcionFotos = document.getElementById('descripcionFotos').value.trim();
+  const fecha = new Date().toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
+
+  const fInv = estado.investigacion.length > 0
+    ? estado.investigacion.map((c,i) => `<tr><td style="text-align:center;">${i+1}</td><td><strong>${esc(c.control)}</strong></td><td>${esc(c.norma)}</td><td>${esc(c.ubicacion)}</td><td>${esc(c.hallazgo)}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#64748b;">Sin hallazgos registrados</td></tr>';
+
+  const fotosHtml = estado.fotos.length > 0
+    ? estado.fotos.map(p => `<div style="display:inline-block;margin:6px;text-align:center;"><img src="${p.data}" style="max-width:200px;max-height:150px;border-radius:4px;border:1px solid #e2e8f0;" alt="${esc(p.nombre)}"><br><span style="font-size:.7rem;color:#64748b;">${esc(p.nombre)}</span></div>`).join('')
+    : '<em style="color:#94a3b8;">Sin fotos subidas</em>';
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Informe Clase 3 – Codificación Segura</title>
+<style>
+  body{font-family:'Plus Jakarta Sans','Segoe UI',Arial,sans-serif;color:#1e293b;line-height:1.65;max-width:960px;margin:30px auto;padding:0 32px;background:#f8fafc;}
+  h1{color:#0f172a;border-bottom:3px solid #10b981;padding-bottom:12px;font-size:1.5rem;}
+  h2{color:#059669;margin-top:38px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;font-size:1.15rem;}
+  h3{color:#0f172a;margin-top:24px;font-size:1rem;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9rem;}
+  th,td{border:1px solid #e2e8f0;padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:#0f172a;color:#fff;font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.5px;}
+  .portada{background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:8px;padding:22px 26px;margin:24px 0;}
+  .portada p{margin:6px 0;}
+  .portada strong{color:#0f172a;}
+  .nota{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;font-size:.9rem;margin:18px 0;}
+  .bloque{margin:14px 0;padding:12px 16px;background:#f1f5f9;border-radius:6px;border-left:3px solid #10b981;}
+  .bloque strong{color:#0f172a;}
+  .fase{margin:24px 0;padding:16px 20px;background:#ecfdf5;border-radius:8px;border-left:4px solid #10b981;}
+  .fase h2{margin-top:0;border:none;padding:0;}
+</style></head>
+<body>
+
+<h1>Informe Clase 3 – Codificación Segura</h1>
+
+<div class="portada">
+  <p><strong>OVA:</strong> Herramienta de Seguridad en Redes desde Cero – Clase 3</p>
+  <p><strong>Fecha:</strong> ${fecha}</p>
+  <p><strong>Clase:</strong> 3 de 5</p>
+  <p><strong>Estructura:</strong> Teoría → Investigación → Evidencia</p>
+  <p><strong>Nota:</strong> Este informe se anexa al de Clase 1 y Clase 2. No los reemplaza.</p>
+</div>
+
+<div class="nota"><strong>Regla:</strong> cada control debe tener teoría comprendida, investigación registrada y evidencia fotográfica. Sin las tres, el control no cuenta.</div>
+
+<div class="fase">
+  <h2>Fase 1 · Teoría</h2>
+  <p>Los cuatro controles fundamentales estudiados en esta clase:</p>
+  <ul>
+    <li><strong>Validación de entradas (ASVS V5):</strong> toda entrada es hostil. Validación positiva (lista blanca) en el servidor, no en el cliente.</li>
+    <li><strong>Manejo de errores y logging (ASVS V7):</strong> mensaje genérico al usuario, detalle al log interno. Nunca loguear contraseñas ni tokens.</li>
+    <li><strong>Cifrado (ASVS V6 y V9):</strong> TLS moderno para tránsito. Argon2/bcrypt/PBKDF2 para contraseñas. Nunca MD5 ni texto plano.</li>
+    <li><strong>SAST y secretos (SSDF PW.7 y PS.1):</strong> análisis estático en cada commit. Secretos en variables de entorno, nunca en el código.</li>
+  </ul>
+</div>
+
+<div class="fase">
+  <h2>Fase 2 · Investigación</h2>
+
+  <h3>Hallazgos de controles en el código</h3>
+  <table>
+    <thead><tr><th style="width:40px;">#</th><th>Control</th><th>Norma / requisito</th><th>Archivo / línea</th><th>Hallazgo</th></tr></thead>
+    <tbody>${fInv}</tbody>
+  </table>
+
+  <h3>Análisis estático (SAST)</h3>
+  <div class="bloque">
+    <p><strong>Herramienta usada:</strong> ${esc(herramienta)}</p>
+    <p><strong>Total de hallazgos:</strong> ${esc(totalHallazgos)}</p>
+    <p><strong>Hallazgos relevantes y cómo los interpretaron:</strong><br>${esc(hallazgosSast).replace(/\n/g,'<br>')}</p>
+    <p><strong>Revisión de secretos:</strong> ${esc(revisionSecretos)}</p>
+    ${detalleSecretos ? `<p><strong>Detalle de la revisión:</strong><br>${esc(detalleSecretos).replace(/\n/g,'<br>')}</p>` : ''}
+  </div>
+
+  <h3>Conclusiones de la investigación</h3>
+  <div class="bloque">
+    <p><strong>¿Qué controles encontraron implementados y cuáles faltan?</strong><br>${esc(conclusionInvestigacion).replace(/\n/g,'<br>')}</p>
+    <p><strong>¿Qué corregirán antes de la Clase 4?</strong><br>${esc(correcciones).replace(/\n/g,'<br>')}</p>
+    ${fuentesConsultadas ? `<p><strong>Fuentes consultadas:</strong><br>${esc(fuentesConsultadas).replace(/\n/g,'<br>')}</p>` : ''}
+  </div>
+</div>
+
+<div class="fase">
+  <h2>Fase 3 · Evidencia</h2>
+  <h3>Fotos de evidencia</h3>
+  <div>${fotosHtml}</div>
+  ${descripcionFotos ? `<div class="bloque"><p><strong>Descripción de las fotos:</strong><br>${esc(descripcionFotos).replace(/\n/g,'<br>')}</p></div>` : ''}
+</div>
+
+<h2>Declaración de cierre</h2>
+<p>El equipo declara que los controles aquí registrados fueron implementados en el código de la herramienta, con evidencia fotográfica verificable, y que la investigación realizada es coherente con el alcance de la Clase 1 y el stack de la Clase 2.</p>
+
+</body></html>`;
+}
+
+/* ============ DESCARGAR ============ */
+document.getElementById('btnDescargar').addEventListener('click', () => {
+  const falt = [];
+  if(estado.investigacion.length < 4) falt.push('Mínimo 4 hallazgos de investigación (tienes ' + estado.investigacion.length + ')');
+  else if(!estado.investigacion.every(c => c.control.trim() && c.norma.trim() && c.ubicacion.trim() && c.hallazgo.trim())) falt.push('Control, norma, ubicación y hallazgo de todos los registros');
+  if(!document.getElementById('herramientaSast').value) falt.push('Herramienta SAST');
+  if(!document.getElementById('totalHallazgos').value) falt.push('Total de hallazgos SAST');
+  if(!document.getElementById('hallazgosSast').value.trim()) falt.push('Hallazgos relevantes del SAST');
+  if(!document.getElementById('revisionSecretos').value) falt.push('Revisión de secretos');
+  if(!document.getElementById('conclusionInvestigacion').value.trim()) falt.push('Conclusiones de la investigación');
+  if(!document.getElementById('correcciones').value.trim()) falt.push('Correcciones pendientes');
+  if(estado.fotos.length === 0) falt.push('Al menos una foto de evidencia');
+
+  if(falt.length > 0){
+    alert('⚠ Faltan campos obligatorios:\n\n• ' + falt.join('\n• ') + '\n\nComplétalos antes de descargar.');
+    return;
+  }
+
+  const blob = new Blob([generarInformeHTML()], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Informe_Clase3_Codificacion_Segura.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* ============ INIT ============ */
+renderInvestigacion();
+renderFotos();
+updateProgress();
+updateNavChecks();
+</script>
+
+</body>
+</html>

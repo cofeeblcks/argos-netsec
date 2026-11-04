@@ -8,6 +8,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+ALLOWED_NMAP_TIMING = frozenset({"-T0", "-T1", "-T2", "-T3", "-T4", "-T5"})
+
 
 @dataclass(frozen=True)
 class Config:
@@ -20,7 +22,16 @@ class Config:
     authorized_refresh: bool
 
 
+def validate_nmap_timing(timing: str) -> str:
+    value = timing.strip()
+    if value not in ALLOWED_NMAP_TIMING:
+        allowed = ", ".join(sorted(ALLOWED_NMAP_TIMING))
+        raise ValueError(f"ARGOS_NMAP_TIMING inválido: {timing!r}; use uno de: {allowed}")
+    return value
+
+
 def _local_cidrs() -> list[str]:
+
     cidrs: list[str] = []
     hostname = socket.gethostname()
     try:
@@ -92,7 +103,8 @@ def load_config(env_file: str | None = None) -> Config:
         sensor_token=os.getenv("ARGOS_SENSOR_TOKEN", ""),
         network_cidr=cidr,
         discovery_minutes=int(os.getenv("ARGOS_DISCOVERY_MINUTES", "5")),
-        nmap_timing=os.getenv("ARGOS_NMAP_TIMING", "-T3"),
+        nmap_timing=validate_nmap_timing(os.getenv("ARGOS_NMAP_TIMING", "-T3")),
         queue_dir=queue,
+
         authorized_refresh=os.getenv("ARGOS_AUTHORIZED_REFRESH", "true").lower() in {"1", "true", "yes"},
     )

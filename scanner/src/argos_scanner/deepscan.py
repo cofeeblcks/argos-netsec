@@ -3,11 +3,13 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from typing import Any
 
+from defusedxml import ElementTree as ET
+
 from argos_scanner.discovery import _mac_from_arp, _normalize_mac
+
 
 
 def _now() -> str:

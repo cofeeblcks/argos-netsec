@@ -24,5 +24,7 @@ class ApiStatuses
 
     public const STATUS_UNPROCESSABLE_ENTITY = 422;
 
+    public const STATUS_TOO_MANY_REQUESTS = 429;
+
     public const STATUS_INTERNAL_SERVER_ERROR = 500;
 }

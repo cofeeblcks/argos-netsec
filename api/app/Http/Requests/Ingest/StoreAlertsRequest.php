@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Ingest;
 
+use App\Constants\ValidationPatterns;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAlertsRequest extends FormRequest
 {
@@ -14,10 +16,10 @@ class StoreAlertsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'alerts' => ['required', 'array', 'min:1'],
+            'alerts' => ['required', 'array', 'min:1', 'max:500'],
             'alerts.*.occurredAt' => ['nullable', 'date'],
-            'alerts.*.rule' => ['required', 'string'],
-            'alerts.*.severity' => ['required', 'in:low,medium,high,critical'],
+            'alerts.*.rule' => ['required', 'string', 'max:255'],
+            'alerts.*.severity' => ['required', 'string', Rule::in(ValidationPatterns::ALERT_SEVERITY)],
             'alerts.*.srcIp' => ['nullable', 'ip'],
             'alerts.*.dstIp' => ['nullable', 'ip'],
             'alerts.*.deviceId' => ['nullable', 'integer'],

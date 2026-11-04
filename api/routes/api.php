@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Route;
 Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Route::prefix('v1')->group(function () {
-    Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:login');
 
     Route::middleware('sensor')->prefix('ingest')->group(function () {
         Route::get('heartbeat', [BaselineController::class, 'heartbeat']);

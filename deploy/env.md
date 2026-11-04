@@ -2,10 +2,22 @@
 
 Claves compartidas entre subproyectos. Cada carpeta tiene su `.env.example`; copia a `.env` y rellena.
 
+## Seguridad (Clase 3)
+
+| Variable | Lab (`127.0.0.1`) | Fuera de lab / host compartido |
+| --- | --- | --- |
+| `APP_DEBUG` | `true` (opcional) | **`false`** — evita filtrar mensajes de excepción al cliente |
+| `LOG_LEVEL` | `debug` | `info` o `warning` |
+| `SANCTUM_EXPIRATION` | `60` (minutos) | Mantener finito; no usar vacío/`null` en producción |
+| `ARGOS_NMAP_TIMING` | `-T2` o `-T3` | Solo allowlist `-T0`…`-T5` |
+| Secretos | Solo en `.env` (gitignored) | Nunca en docs ni commits; si se filtró un token → **revocar** |
+
 ## API (`api/.env`)
 
 | Variable | Ejemplo local | Notas |
 | --- | --- | --- |
+| `APP_DEBUG` | `true` | Fuera de lab: `false` |
+| `SANCTUM_EXPIRATION` | `60` | Minutos hasta expirar tokens Sanctum del dashboard |
 | `APP_URL` | `http://127.0.0.1:8000` | Debe coincidir con la URL que usa el dashboard |
 | `DB_CONNECTION` | `mariadb` | Tests: SQLite en memoria vía `phpunit.xml` |
 | `BROADCAST_CONNECTION` | `reverb` | En tests: `null` |
@@ -45,7 +57,7 @@ El chat_id es el destino de las alertas (tu usuario, un grupo o un canal).
 2. En el navegador o con `curl`:
 
 ```bash
-curl -s "https://api.telegram.org/bot/8769458009:AAG33wwcqE7kP4fK1fx18RYpHGDfn2r774w/getUpdates" | jq .
+curl -s "https://api.telegram.org/bot/<TELEGRAM_BOT_TOKEN>/getUpdates" | jq .
 ```
 
 3. En la respuesta busca `message.chat.id` (número entero, positivo para usuario). Ese valor es `TELEGRAM_CHAT_ID`.

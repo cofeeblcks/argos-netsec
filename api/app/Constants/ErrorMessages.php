@@ -21,4 +21,6 @@ class ErrorMessages
     public const UNAUTHORIZED = 'No autorizado';
 
     public const INVALID_SENSOR_TOKEN = 'Token de sensor inválido';
+
+    public const TOO_MANY_REQUESTS = 'Demasiados intentos. Intenta de nuevo más tarde';
 }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -99,7 +100,18 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
 
-        $exceptions->render(function (\Throwable $exception, $request) {
+        $exceptions->render(function (ThrottleRequestsException $exception, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => ErrorMessages::TOO_MANY_REQUESTS,
+                ], ApiStatuses::STATUS_TOO_MANY_REQUESTS)->withHeaders($exception->getHeaders());
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (Throwable $exception, $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 $message = ErrorMessages::SERVER_ERROR;
                 $error = config('app.debug') ? $exception->getMessage() : null;
