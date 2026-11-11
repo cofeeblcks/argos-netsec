@@ -6,6 +6,12 @@ Sensores Python → API Laravel → MariaDB / Reverb → dashboard React + alert
 
 Plan de implementación: [docs/Argos NetSec Plan de implementación.md](docs/Argos%20NetSec%20Plan%20de%20implementaci%C3%B3n.md)
 
+| Manual | Para qué |
+| --- | --- |
+| [Instalación y ejecución](docs/manual-instalacion-y-ejecucion.md) | Requisitos, Docker, nativo, systemd y comprobaciones |
+| [Uso](docs/manual-de-uso.md) | Login, pantallas, alertas, autorización y Telegram |
+| [Funcionamiento](docs/manual-de-funcionamiento.md) | Arquitectura, sensores, API, tiempo real y límites actuales |
+
 Variables de entorno: [deploy/env.md](deploy/env.md) · Docker Compose: [.env.docker.example](.env.docker.example)
 
 ## Deploy con Docker
